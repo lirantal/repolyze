@@ -1,0 +1,1 @@
+pnpm exec validate-conventional-commit < .git/COMMIT_EDITMSG
