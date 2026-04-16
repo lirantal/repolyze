@@ -1,5 +1,5 @@
 import { runGit } from '../lib/git.ts'
-import type { ContributorRow, FirefightingRow, MonthlyCommitCount, RankedPath } from './types.ts'
+import type { ContributorRow, FirefightingRow, MonthlyCommitCount, RankedPath, SecurityFixRow } from './types.ts'
 
 const CHURN_WINDOW = '1 year ago'
 const FIRE_WINDOW = '1 year ago'
@@ -8,6 +8,21 @@ const SHORTLOG_SIX_MONTHS = '6 months ago'
 const BUG_GREP = 'fix|bug|broken'
 const FIRE_KEYWORDS = 'revert|hotfix|emergency|rollback'
 const FIRE_RE = new RegExp(FIRE_KEYWORDS, 'i')
+
+const SECURITY_TIER1_GREP = 'GHSA-|CVE-|CWE-'
+const SECURITY_TIER2_GREPS = [
+  'Merge commit from fork',
+  'fix\\(sec',
+  'fix\\(security',
+  'fix\\(vuln',
+  '^sec:',
+  '^security:',
+]
+const SECURITY_TIER3_GREP = 'SSRF|XSS|CSRF|injection|traversal|prototype.pollution|ReDoS|sandbox.escape|auth.bypass|command.injection|CRLF|deserialization|open.redirect'
+
+const SECURITY_TIER1_RE = /GHSA-|CVE-|CWE-/i
+const SECURITY_TIER2_RE = /Merge commit from fork|fix\(sec|fix\(security|fix\(vuln|^sec:|^security:/im
+const SECURITY_COMBINED_GREP = [SECURITY_TIER1_GREP, ...SECURITY_TIER2_GREPS, SECURITY_TIER3_GREP]
 
 function countPathTouches (gitNameOnlyLog: string): RankedPath[] {
   const counts = new Map<string, number>()
@@ -80,6 +95,47 @@ export async function collectFirefighting (cwd: string, verbose?: boolean): Prom
   return matches
 }
 
+export async function collectSecurityHotspots (
+  cwd: string,
+  verbose?: boolean
+): Promise<{ topFiles: RankedPath[]; matches: SecurityFixRow[] }> {
+  // git log with multiple --grep flags gives OR semantics (without --all-match)
+  const grepArgs = SECURITY_COMBINED_GREP.flatMap(g => [`--grep=${g}`])
+  const raw = await runGit(
+    ['log', '--all', '-i', '-E', ...grepArgs, '--oneline'],
+    { cwd, verbose }
+  )
+
+  const matches: SecurityFixRow[] = []
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed.length === 0) continue
+    const space = trimmed.indexOf(' ')
+    if (space === -1) continue
+    const hash = trimmed.slice(0, space)
+    const subject = trimmed.slice(space + 1)
+
+    let tier: 1 | 2 | 3
+    if (SECURITY_TIER1_RE.test(subject)) {
+      tier = 1
+    } else if (SECURITY_TIER2_RE.test(subject)) {
+      tier = 2
+    } else {
+      tier = 3
+    }
+    matches.push({ hash, subject, tier })
+  }
+
+  // Collect file touches from the same commit set
+  const rawFiles = await runGit(
+    ['log', '--all', '-i', '-E', ...grepArgs, '--format=format:', '--name-only'],
+    { cwd, verbose }
+  )
+  const topFiles = countPathTouches(rawFiles)
+
+  return { topFiles, matches }
+}
+
 function parseShortlog (raw: string): ContributorRow[] {
   const rows: ContributorRow[] = []
   for (const line of raw.split('\n')) {
@@ -144,4 +200,5 @@ export const windows = {
 export const patterns = {
   bugGrep: BUG_GREP,
   firefighting: FIRE_KEYWORDS,
+  security: SECURITY_COMBINED_GREP.join(' | '),
 } as const

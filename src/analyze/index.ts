@@ -5,6 +5,7 @@ import {
   collectChurn,
   collectFirefighting,
   collectRepositoryMeta,
+  collectSecurityHotspots,
   collectShortlog,
   patterns,
   windows,
@@ -55,6 +56,11 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
         keywordPattern: patterns.firefighting,
         matches: [],
       },
+      securityHotspots: {
+        keywordPattern: patterns.security,
+        topFiles: [],
+        matches: [],
+      },
     }
 
     return {
@@ -71,6 +77,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     contributorsAllTime,
     contributorsLastYear,
     contributorsLastSixMonths,
+    securityResult,
   ] = await Promise.all([
     collectChurn(cwd, verbose),
     collectBugHotspots(cwd, verbose),
@@ -79,6 +86,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     collectShortlog(cwd, undefined, verbose),
     collectShortlog(cwd, windows.shortlogYear, verbose),
     collectShortlog(cwd, windows.shortlogSixMonths, verbose),
+    collectSecurityHotspots(cwd, verbose),
   ])
 
   const base: Omit<AnalysisReport, 'insights'> = {
@@ -107,6 +115,11 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
       window: windows.firefighting,
       keywordPattern: patterns.firefighting,
       matches: firefightingMatches,
+    },
+    securityHotspots: {
+      keywordPattern: patterns.security,
+      topFiles: securityResult.topFiles,
+      matches: securityResult.matches,
     },
   }
 

@@ -16,7 +16,7 @@ function paint (text: string, code: string, color: boolean): string {
 function heatColor (level: number, color: boolean): string {
   const clamped = Math.max(0, Math.min(5, level))
   const palette = theme.activity.heatFg
-  return paint('█', palette[clamped] ?? palette[0], color)
+  return paint('█', palette[clamped] ?? palette[0] ?? '', color)
 }
 
 function termWidth (): number {
@@ -116,14 +116,21 @@ function renderContributionStrip (months: MonthlyCommitCount[], color: boolean, 
   return out
 }
 
+type TableTone = 'churn' | 'bugs' | 'security'
+
+function toneColor (tone: TableTone): string {
+  if (tone === 'bugs') return theme.rgb.bugs
+  if (tone === 'security') return theme.rgb.security
+  return theme.rgb.churn
+}
+
 function rankedPathsTable (
   rows: RankedPath[],
-  opts: { color: boolean; width: number; highlightPaths: Set<string>; tone: 'churn' | 'bugs' }
+  opts: { color: boolean; width: number; highlightPaths: Set<string>; tone: TableTone }
 ): string[] {
   if (rows.length === 0) return [paint('    (no data)', ansi.dim, opts.color)]
 
   const maxTouches = rows.reduce((m, r) => Math.max(m, r.touches), 0)
-  // Rank | bar | touch count (fixed) | path — matches contributors-style alignment (bar column does not shift with label length).
   const barCol = 22
   const countW = 5
   const rankW = Math.max(2, String(rows.length).length)
@@ -141,16 +148,14 @@ function rankedPathsTable (
     gapAfterCount
   const pathCol = Math.max(8, opts.width - fixed)
 
+  const fill = toneColor(opts.tone)
   const lines: string[] = []
   let rank = 1
   for (const r of rows) {
     const highlight = opts.highlightPaths.has(r.path)
     const pathText = truncPath(r.path, pathCol)
-    const highlightCode = opts.tone === 'bugs' ? theme.rgb.bugs : theme.rgb.churn
-    const pathBase = pathText
-    const pathStyled = highlight ? paint(pathBase, ansi.bold + highlightCode, opts.color) : pathBase
+    const pathStyled = highlight ? paint(pathText, ansi.bold + fill, opts.color) : pathText
     const rankStr = paint(String(rank).padStart(rankW, ' '), ansi.dim, opts.color)
-    const fill = opts.tone === 'bugs' ? theme.rgb.bugs : theme.rgb.churn
     const b = bar(r.touches, maxTouches, barCol, opts.color, fill)
     const countStr = paint(String(r.touches).padStart(countW, ' '), ansi.dim, opts.color)
     lines.push(
@@ -282,6 +287,26 @@ export function renderPrettyReport (report: AnalysisReport): string {
     if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)
   }
   lines.push('')
+
+  const securityChurnOverlap = new Set(report.churn.topFiles.map(f => f.path))
+  lines.push(horizontalRule(`Security-fix hotspots · ${String(report.securityHotspots.matches.length)} matching commits`, width, color))
+  lines.push('')
+  lines.push(...rankedPathsTable(report.securityHotspots.topFiles, { color, width, highlightPaths: securityChurnOverlap, tone: 'security' }))
+  lines.push('')
+
+  if (report.securityHotspots.matches.length > 0) {
+    const tierLabel = (tier: 1 | 2 | 3): string => {
+      if (tier === 1) return paint('T1', ansi.bold + theme.rgb.security, color)
+      if (tier === 2) return paint('T2', theme.rgb.security, color)
+      return paint('T3', ansi.dim, color)
+    }
+    for (const m of report.securityHotspots.matches.slice(0, 18)) {
+      lines.push(`    ${tierLabel(m.tier)}  ${paint(m.hash, ansi.magenta, color)}  ${m.subject}`)
+    }
+    const more = report.securityHotspots.matches.length - 18
+    if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)
+    lines.push('')
+  }
 
   lines.push(...insightsBlock(report, color, width))
 

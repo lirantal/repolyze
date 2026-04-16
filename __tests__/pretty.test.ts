@@ -31,6 +31,11 @@ describe('renderPrettyReport', () => {
         keywordPattern: 'revert|hotfix|emergency|rollback',
         matches: [{ hash: 'abc1234', subject: 'hotfix: patch' }],
       },
+      securityHotspots: {
+        keywordPattern: 'GHSA-|CVE-|CWE-',
+        topFiles: [{ path: 'src/app.ts', touches: 1 }],
+        matches: [{ hash: 'def5678', subject: 'fix(security): CVE-2024-1234', tier: 1 }],
+      },
       insights: [
         { id: 'churn_bug_overlap', level: 'warn', message: 'example overlap' },
         { id: 'squash_merge_caveat', level: 'info', message: 'example caveat' },

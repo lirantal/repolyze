@@ -85,6 +85,46 @@ export function buildInsights (report: Omit<AnalysisReport, 'insights'>): Analys
     })
   }
 
+  const securityPaths = new Set(report.securityHotspots.topFiles.map(f => f.path))
+  const secChurnOverlap = report.churn.topFiles.filter(f => securityPaths.has(f.path))
+  if (secChurnOverlap.length > 0) {
+    const paths = secChurnOverlap.map(o => o.path).slice(0, 8).join(', ')
+    const extra = secChurnOverlap.length > 8 ? ` (+${String(secChurnOverlap.length - 8)} more)` : ''
+    insights.push({
+      id: 'security_churn_overlap',
+      level: 'warn',
+      message: `Files appear in both high churn and security-fix hotspots: ${paths}${extra}.`,
+    })
+  }
+
+  const secBugOverlap = report.bugHotspots.topFiles.filter(f => securityPaths.has(f.path))
+  if (secBugOverlap.length > 0) {
+    const paths = secBugOverlap.map(o => o.path).slice(0, 8).join(', ')
+    const extra = secBugOverlap.length > 8 ? ` (+${String(secBugOverlap.length - 8)} more)` : ''
+    insights.push({
+      id: 'security_bug_overlap',
+      level: 'warn',
+      message: `Files appear in both bug-keyword and security-fix hotspots: ${paths}${extra}.`,
+    })
+  }
+
+  const tier1Count = report.securityHotspots.matches.filter(m => m.tier === 1).length
+  if (tier1Count > 0) {
+    insights.push({
+      id: 'security_advisory_coverage',
+      level: 'info',
+      message: `${String(tier1Count)} commit${tier1Count === 1 ? '' : 's'} reference formal advisory IDs (GHSA/CVE/CWE), indicating responsible disclosure practices.`,
+    })
+  }
+
+  if (report.securityHotspots.matches.length === 0) {
+    insights.push({
+      id: 'no_security_keywords',
+      level: 'info',
+      message: 'No security-related keywords detected in commit history; either no vulnerabilities or non-descriptive messages.',
+    })
+  }
+
   insights.push({
     id: 'squash_merge_caveat',
     level: 'info',
