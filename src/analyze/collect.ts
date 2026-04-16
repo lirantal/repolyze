@@ -11,7 +11,6 @@ const FIRE_RE = new RegExp(FIRE_KEYWORDS, 'i')
 
 const SECURITY_TIER1_GREP = 'GHSA-|CVE-|CWE-'
 const SECURITY_TIER2_GREPS = [
-  'Merge commit from fork',
   'fix\\(sec',
   'fix\\(security',
   'fix\\(vuln',
@@ -21,7 +20,8 @@ const SECURITY_TIER2_GREPS = [
 const SECURITY_TIER3_GREP = 'SSRF|XSS|CSRF|injection|traversal|prototype.pollution|ReDoS|sandbox.escape|auth.bypass|command.injection|CRLF|deserialization|open.redirect'
 
 const SECURITY_TIER1_RE = /GHSA-|CVE-|CWE-/i
-const SECURITY_TIER2_RE = /Merge commit from fork|fix\(sec|fix\(security|fix\(vuln|^sec:|^security:/im
+const SECURITY_TIER2_RE = /fix\(sec|fix\(security|fix\(vuln|^sec:|^security:/im
+// "Merge commit from fork" is handled separately via a body-aware pass (Step 3)
 const SECURITY_COMBINED_GREP = [SECURITY_TIER1_GREP, ...SECURITY_TIER2_GREPS, SECURITY_TIER3_GREP]
 
 function countPathTouches (gitNameOnlyLog: string): RankedPath[] {
@@ -99,13 +99,15 @@ export async function collectSecurityHotspots (
   cwd: string,
   verbose?: boolean
 ): Promise<{ topFiles: RankedPath[]; matches: SecurityFixRow[] }> {
-  // git log with multiple --grep flags gives OR semantics (without --all-match)
   const grepArgs = SECURITY_COMBINED_GREP.flatMap(g => [`--grep=${g}`])
+
+  // Main pass: keyword grep across tiers 1/2/3 (excludes "Merge commit from fork")
   const raw = await runGit(
     ['log', '--all', '-i', '-E', ...grepArgs, '--oneline'],
     { cwd, verbose }
   )
 
+  const seenHashes = new Set<string>()
   const matches: SecurityFixRow[] = []
   for (const line of raw.split('\n')) {
     const trimmed = line.trim()
@@ -115,6 +117,11 @@ export async function collectSecurityHotspots (
     const hash = trimmed.slice(0, space)
     const subject = trimmed.slice(space + 1)
 
+    // "Merge commit from fork" commits matched here because the body
+    // contained a keyword.  Defer them to the body-aware pass so they
+    // are only included when an advisory ID is confirmed in the body.
+    if (subject === 'Merge commit from fork') continue
+
     let tier: 1 | 2 | 3
     if (SECURITY_TIER1_RE.test(subject)) {
       tier = 1
@@ -123,12 +130,43 @@ export async function collectSecurityHotspots (
     } else {
       tier = 3
     }
+    seenHashes.add(hash)
     matches.push({ hash, subject, tier })
   }
 
-  // Collect file touches from the same commit set
+  // Step 3: body-aware pass for "Merge commit from fork" (GitHub security advisory merges).
+  // These commits have a generic subject but the GHSA/CVE/CWE lives in the body.
+  // Only promote to a match if the body actually contains an advisory identifier.
+  const forkMergeRaw = await runGit(
+    ['log', '--all', '--grep=Merge commit from fork', '--format=%H\t%s\t%b%x00'],
+    { cwd, verbose }
+  )
+
+  for (const block of forkMergeRaw.split('\0')) {
+    const trimmed = block.trim()
+    if (trimmed.length === 0) continue
+    const firstTab = trimmed.indexOf('\t')
+    const secondTab = trimmed.indexOf('\t', firstTab + 1)
+    if (firstTab === -1 || secondTab === -1) continue
+    const hash = trimmed.slice(0, firstTab)
+    const shortHash = hash.slice(0, 7)
+    if (seenHashes.has(shortHash)) continue
+    const subject = trimmed.slice(firstTab + 1, secondTab)
+    const body = trimmed.slice(secondTab + 1)
+    if (SECURITY_TIER1_RE.test(body)) {
+      seenHashes.add(shortHash)
+      matches.push({ hash: shortHash, subject, tier: 1 })
+    }
+  }
+
+  // Collect file touches — include fork-merge advisory commits in the grep so their
+  // files appear in the hotspot ranking.  The --grep OR may also match non-advisory
+  // fork merges, but in practice GitHub only uses this subject for security advisories.
+  const fileGrepArgs = matches.some(m => m.subject === 'Merge commit from fork')
+    ? [...grepArgs, '--grep=Merge commit from fork']
+    : grepArgs
   const rawFiles = await runGit(
-    ['log', '--all', '-i', '-E', ...grepArgs, '--format=format:', '--name-only'],
+    ['log', '--all', '-i', '-E', ...fileGrepArgs, '--format=format:', '--name-only'],
     { cwd, verbose }
   )
   const topFiles = countPathTouches(rawFiles)
