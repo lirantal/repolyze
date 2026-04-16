@@ -16,7 +16,7 @@ function paint (text: string, code: string, color: boolean): string {
 function heatColor (level: number, color: boolean): string {
   const clamped = Math.max(0, Math.min(5, level))
   const palette = theme.activity.heatFg
-  return paint('█', palette[clamped] ?? palette[0], color)
+  return paint('█', palette[clamped] ?? palette[0] ?? '', color)
 }
 
 function termWidth (): number {

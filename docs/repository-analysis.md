@@ -140,19 +140,21 @@ Commits referencing **GHSA**, **CVE**, or **CWE** identifiers are almost always 
 
 Examples found across the researched repositories:
 
-| Repository | Identifier | Vulnerability |
-|---|---|---|
-| nodemailer | `GHSA-vvjj-xcjg-gr5g` | SMTP command injection via CRLF in transport name |
-| nodemailer | `GHSA-9h6g-pr28-7cqp` | ReDoS in matching patterns |
-| unhead | `GHSA-x7mm-9vvv-64w8` | XSS via unsanitized streamKey in inline scripts |
-| n8n-mcp | `GHSA-4ggg-h7ph-26qr` | SSRF in multi-tenant instance configuration |
-| express | `CVE-2024-51999` | Query string parsing vulnerability |
-| express | `CVE-2026-2391`, `GHSA-w7fw-mjwx-w883` | qs arrayLimit bypass / denial of service |
-| axios | `CVE-2024-39338` | SSRF via protocol-relative URL |
-| axios | `CVE-2023-45857` | CSRF vulnerability |
-| PraisonAI | `CWE-78` | OS command injection via environment variable keys |
-| PraisonAI | `CWE-942` | CORS misconfiguration |
-| PraisonAI | `CVE-2026-22218` | Supply chain / dependency vulnerability |
+
+| Repository | Identifier                             | Vulnerability                                      |
+| ---------- | -------------------------------------- | -------------------------------------------------- |
+| nodemailer | `GHSA-vvjj-xcjg-gr5g`                  | SMTP command injection via CRLF in transport name  |
+| nodemailer | `GHSA-9h6g-pr28-7cqp`                  | ReDoS in matching patterns                         |
+| unhead     | `GHSA-x7mm-9vvv-64w8`                  | XSS via unsanitized streamKey in inline scripts    |
+| n8n-mcp    | `GHSA-4ggg-h7ph-26qr`                  | SSRF in multi-tenant instance configuration        |
+| express    | `CVE-2024-51999`                       | Query string parsing vulnerability                 |
+| express    | `CVE-2026-2391`, `GHSA-w7fw-mjwx-w883` | qs arrayLimit bypass / denial of service           |
+| axios      | `CVE-2024-39338`                       | SSRF via protocol-relative URL                     |
+| axios      | `CVE-2023-45857`                       | CSRF vulnerability                                 |
+| PraisonAI  | `CWE-78`                               | OS command injection via environment variable keys |
+| PraisonAI  | `CWE-942`                              | CORS misconfiguration                              |
+| PraisonAI  | `CVE-2026-22218`                       | Supply chain / dependency vulnerability            |
+
 
 #### Tier 2 — Conventional commit scopes and GitHub security advisory merges (high confidence)
 
@@ -175,18 +177,20 @@ Commit messages often name the vulnerability class directly. This tier casts a w
 
 Vulnerability classes observed in the researched repositories:
 
-| Keyword pattern | Repositories where it appeared |
-|---|---|
-| `command injection` | magento2-dev-mcp, heim-mcp, nodemailer |
-| `SSRF` | axios, n8n-mcp |
-| `XSS` | unhead |
-| `path traversal`, `traversal` | saltcorn, PraisonAI, express |
-| `prototype pollution` | axios |
-| `ReDoS` | axios, nodemailer |
-| `CRLF` | nodemailer |
-| `CSRF` | axios |
-| `sandbox escape` | PraisonAI |
-| `injection` (general) | magento2-dev-mcp, heim-mcp, nodemailer, PraisonAI |
+
+| Keyword pattern               | Repositories where it appeared                    |
+| ----------------------------- | ------------------------------------------------- |
+| `command injection`           | magento2-dev-mcp, heim-mcp, nodemailer            |
+| `SSRF`                        | axios, n8n-mcp                                    |
+| `XSS`                         | unhead                                            |
+| `path traversal`, `traversal` | saltcorn, PraisonAI, express                      |
+| `prototype pollution`         | axios                                             |
+| `ReDoS`                       | axios, nodemailer                                 |
+| `CRLF`                        | nodemailer                                        |
+| `CSRF`                        | axios                                             |
+| `sandbox escape`              | PraisonAI                                         |
+| `injection` (general)         | magento2-dev-mcp, heim-mcp, nodemailer, PraisonAI |
+
 
 ### How to run
 
