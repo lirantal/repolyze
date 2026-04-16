@@ -2,29 +2,6 @@
 
 Analyze a git source code repository for health signals and project vitals
 
-## Requirements
-
-- [Node.js](https://nodejs.org/) v24 or newer
-- [`git`](https://git-scm.com/) available on your `PATH`
-
-## Install
-
-Install globally (pick your package manager):
-
-```sh
-npm install -g repolyze
-```
-
-```sh
-pnpm add -g repolyze
-```
-
-Or run **without** installing, using `npx` (downloads the package for that invocation):
-
-```sh
-npx repolyze --help
-```
-
 ## Usage
 
 Analyze the current directory as a git repository and print JSON (for tooling or AI agents):
@@ -52,6 +29,29 @@ npx repolyze --help
 ```
 
 When the package is installed globally, use the `repolyze` command the same way (for example `repolyze --json .`).
+
+## Requirements
+
+- [Node.js](https://nodejs.org/) v24 or newer
+- [`git`](https://git-scm.com/) available on your `PATH`
+
+## Install
+
+Install globally (pick your package manager):
+
+```sh
+npm install -g repolyze
+```
+
+```sh
+pnpm add -g repolyze
+```
+
+Or run **without** installing, using `npx` (downloads the package for that invocation):
+
+```sh
+npx repolyze --help
+```
 
 ## Credits
 
