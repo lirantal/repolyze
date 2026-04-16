@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.1.1
+
+### Patch Changes
+
+- [`69ba29d`](https://github.com/lirantal/repolyze/commit/69ba29d95dfc292e1956dff9784325fb4cfe8093) Thanks [@lirantal](https://github.com/lirantal)! - fix: security analysis deviation
+
 ## 1.1.0
 
 ### Minor Changes
