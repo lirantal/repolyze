@@ -3,7 +3,9 @@ import neostandard, { resolveIgnoresFromGitignore, plugins } from 'neostandard'
 
 export default [
   ...neostandard({
-    ignores: ['__tests__/**/*.ts', 'dist/**', 
+    ignores: [
+      '__tests__/**/*.ts',
+      'dist/**',
       '.cursor/**',
       '.devcontainer/**',
       '.github/**',

@@ -1,3 +1,2 @@
-export async function add (arg1: number, arg2: number): Promise<number> {
-  return Promise.resolve(arg1 + arg2)
-}
+export { analyzeRepository, REPORT_SCHEMA_VERSION } from './analyze/index.ts'
+export type { AnalysisReport } from './analyze/types.ts'

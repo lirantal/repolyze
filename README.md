@@ -1,36 +1,34 @@
-<!-- markdownlint-disable -->
 
-<p align="center">
-  <h1 align="center">
-    repolyze
-  </h1>
-</p>
 
-<p align="center">
-  Analyze a git source code repository for health signals and project vitals
-</p>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/v/repolyze" alt="npm version"/></a>
-  <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/license/repolyze" alt="license"/></a>
-  <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/dt/repolyze" alt="downloads"/></a>
-  <a href="https://github.com/lirantal/repolyze/actions?workflow=CI"><img src="https://github.com/lirantal/repolyze/workflows/CI/badge.svg" alt="build"/></a>
-  <a href="https://app.codecov.io/gh/lirantal/repolyze"><img src="https://badgen.net/codecov/c/github/lirantal/repolyze" alt="codecov"/></a>
-  <a href="https://snyk.io/test/github/lirantal/repolyze"><img src="https://snyk.io/test/github/lirantal/repolyze/badge.svg" alt="Known Vulnerabilities"/></a>
-  <a href="./SECURITY.md"><img src="https://img.shields.io/badge/Security-Responsible%20Disclosure-yellow.svg" alt="Responsible Disclosure Policy" /></a>
-</p>
+
+# repolyze
+
+
+
+Analyze a git source code repository for health signals and project vitals
+
+
 
 ## Install
 
 ```sh
 pnpm install repolyze
 ```
+
 ## Usage: CLI
 
 ```bash
-// @TODO
-const {} = require('repolyze')
+pnpm start -- --json .
+pnpm start -- --help
+repolyze --json /path/to/repo
 ```
+
+For flags and behavior, run `repolyze --help` (or `pnpm start -- --help` from a clone).
+
+## Credits
+
+The default signals this tool collects mirror the git workflow described by **Maciej Piechowski** in *[The Git Commands I Run Before Reading Any Code](https://piechowski.io/post/git-commands-before-reading-code/)*. See [docs/repository-analysis.md](./docs/repository-analysis.md) for command-by-command notes, caveats, and the same attribution in context.
 
 ## Contributing
 
