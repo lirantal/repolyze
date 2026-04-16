@@ -222,6 +222,8 @@ git log --all -i -E \
   --oneline
 ```
 
+**Important:** `git log --grep` matches against both the commit subject and body. A commit whose body mentions `"injection"` (for example, in a changelog paragraph or co-author line) but whose subject is entirely unrelated (for example, `"feat: add --serve flag"`) would be a false positive. `repolyze` therefore validates tier-3 matches by checking that the **subject line** itself contains the keyword. Commits that only matched via body content are dropped.
+
 #### Step 2 — Files most touched by security-fix commits
 
 Combine all tiers into a single pass and extract file paths:
@@ -261,7 +263,7 @@ git log --all --grep="Merge commit from fork" --format="%H %s%n%b" \
 - Like bug-keyword detection (section 3), this depends entirely on **commit message discipline**. Projects with vague or formulaic messages (`"fix stuff"`, `"update"`) will produce weak or empty signals.
 - The `"Merge commit from fork"` pattern is specific to GitHub's security advisory workflow. Repositories hosted elsewhere or using different merge strategies will not produce this signal.
 - Some security fixes use **generic messages** that no keyword search can catch. For example, PraisonAI's commit `feat(context): enhance agent ledger and monitor functionality` actually contained path-traversal hardening in the diff, but the subject gives no indication of security intent. Keyword grep will miss these.
-- Broad tier-3 keywords like `"injection"` or `"escape"` can match non-security commits (dependency injection frameworks, string escaping utilities). The tiered approach limits noise: tier-1 and tier-2 results should be treated with high confidence, while tier-3 results benefit from human review or cross-referencing with the actual diff.
+- Broad tier-3 keywords like `"injection"` or `"escape"` can match non-security commits (dependency injection frameworks, string escaping utilities). `repolyze` mitigates this by requiring the keyword to appear in the commit **subject** (not just the body), but subject-level false positives are still possible. Tier-1 and tier-2 results should be treated with high confidence, while tier-3 results benefit from human review.
 - Merge commits can inflate file-touch counts when `--name-only` includes the merge diff. Filtering with `--no-merges` reduces noise but may exclude the advisory merge commits themselves; `repolyze` should count both and let the consumer decide.
 
 ---

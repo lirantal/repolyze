@@ -173,13 +173,19 @@ describe('analyzeRepository (integration)', () => {
       GIT_COMMITTER_DATE: isoDaysAgo(10),
     })
 
-    // "Merge commit from fork" WITHOUT advisory in body -> should be excluded
-    await writeAndCommit(dir, {
-      file: otherFile,
-      content: 'cleanup\n',
-      message: 'unrelated change',
-      date: isoDaysAgo(8),
+    // Body-only keyword match -> should be EXCLUDED (subject has no security keyword)
+    await fs.writeFile(path.join(dir, otherFile), 'serve\n', 'utf8')
+    await execGit(dir, ['add', '--', otherFile])
+    await execGit(dir, [
+      'commit', '--no-verify',
+      '-m', 'feat: add --serve flag to serve generated HTML',
+      '-m', 'Uses injection of env vars for configuration.',
+    ], {
+      GIT_AUTHOR_DATE: isoDaysAgo(9),
+      GIT_COMMITTER_DATE: isoDaysAgo(9),
     })
+
+    // "Merge commit from fork" WITHOUT advisory in body -> should be excluded
     await fs.writeFile(path.join(dir, otherFile), 'v2\n', 'utf8')
     await execGit(dir, ['add', '--', otherFile])
     await execGit(dir, [
@@ -208,10 +214,20 @@ describe('analyzeRepository (integration)', () => {
     assert.strictEqual(t3.length, 1, 'expected 1 tier-3 match (traversal keyword)')
     assert.ok(/traversal/.test(t3[0].subject))
 
+    // Total: exactly 4 matches (no false positives from body-only or non-advisory fork merges)
+    assert.strictEqual(report.securityHotspots.matches.length, 4,
+      'expected exactly 4 security matches (2 T1 + 1 T2 + 1 T3)')
+
     // The non-advisory "Merge commit from fork" should NOT appear in any tier
     const forkMatches = report.securityHotspots.matches.filter(m => m.subject === 'Merge commit from fork')
     assert.strictEqual(forkMatches.length, 1, 'only the fork-merge with GHSA in body should be included')
     assert.strictEqual(forkMatches[0].tier, 1)
+
+    // Body-only keyword match should NOT appear (subject has no security keyword)
+    assert.ok(
+      !report.securityHotspots.matches.some(m => /serve/.test(m.subject)),
+      'commits matching only via body content should be excluded'
+    )
 
     // secFile should appear in top files (touched by all security commits)
     assert.ok(report.securityHotspots.topFiles.some(f => f.path === secFile))
