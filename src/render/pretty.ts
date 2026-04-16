@@ -161,10 +161,20 @@ function contributorsPreview (report: AnalysisReport, color: boolean, limit: num
   const rows = report.contributors.lastYear.length > 0 ? report.contributors.lastYear : report.contributors.allTime
   if (rows.length === 0) return [paint('    (no data)', ansi.dim, color)]
 
+  const shownRows = rows.slice(0, limit)
+  const rankW = Math.max(2, String(shownRows.length).length)
+  const prefix = '    '
+  const gapAfterRank = 2
+
   const max = rows.reduce((m, r) => Math.max(m, r.commits), 0)
-  for (const r of rows.slice(0, limit)) {
+  let rank = 1
+  for (const r of shownRows) {
     const b = bar(r.commits, max, 22, color)
-    lines.push(`    ${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`)
+    const rankStr = paint(String(rank).padStart(rankW, ' '), ansi.dim, color)
+    lines.push(
+      `${prefix}${rankStr}${' '.repeat(gapAfterRank)}${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
+    )
+    rank += 1
   }
 
   const more = rows.length - limit
@@ -236,10 +246,19 @@ export function renderPrettyReport (report: AnalysisReport): string {
   if (report.contributors.lastSixMonths.length === 0) {
     lines.push(paint('    (no data)', ansi.dim, color))
   } else {
+    const sixRows = report.contributors.lastSixMonths.slice(0, 12)
+    const rankW6 = Math.max(2, String(sixRows.length).length)
     const max6 = report.contributors.lastSixMonths.reduce((m, r) => Math.max(m, r.commits), 0)
-    for (const r of report.contributors.lastSixMonths.slice(0, 12)) {
+    const prefix6 = '    '
+    const gapAfterRank6 = 2
+    let rank6 = 1
+    for (const r of sixRows) {
       const b = bar(r.commits, max6, 22, color)
-      lines.push(`    ${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`)
+      const rankStr = paint(String(rank6).padStart(rankW6, ' '), ansi.dim, color)
+      lines.push(
+        `${prefix6}${rankStr}${' '.repeat(gapAfterRank6)}${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
+      )
+      rank6 += 1
     }
   }
   lines.push('')
