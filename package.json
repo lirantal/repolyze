@@ -1,6 +1,6 @@
 {
   "name": "repolyze",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Analyze a git source code repository for health signals and project vitals",
   "types": "dist/main.d.mts",
   "type": "module",
