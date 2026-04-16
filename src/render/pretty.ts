@@ -60,6 +60,24 @@ function horizontalRule (label: string, width: number, color: boolean): string {
   return `${paint(prefix, ansi.dim, color)}${paint(label, ansi.bold + ansi.cyan, color)}${paint(suffix + line, ansi.dim, color)}`
 }
 
+function boxedHeader (title: string, subtitle: string, width: number, color: boolean): string[] {
+  const w = Math.max(20, width)
+  const top = `┌${'─'.repeat(Math.max(3, w - 2))}┐`
+  const bottom = `└${'─'.repeat(Math.max(3, w - 2))}┘`
+
+  const line = (content: string, contentPaint: (s: string) => string): string => {
+    const pad = Math.max(0, w - content.length - 3)
+    return `${paint('│', ansi.dim, color)} ${contentPaint(content)}${' '.repeat(pad)}${paint('│', ansi.dim, color)}`
+  }
+
+  return [
+    paint(top, ansi.dim, color),
+    line(title, (s) => paint(s, ansi.bold + ansi.cyan, color)),
+    line(subtitle, (s) => paint(s, ansi.dim, color)),
+    paint(bottom, ansi.dim, color),
+  ]
+}
+
 function bar (value: number, max: number, width: number, color: boolean): string {
   if (width <= 0) return ''
   if (max <= 0) return paint('░'.repeat(width), ansi.dim, color)
@@ -202,15 +220,8 @@ export function renderPrettyReport (report: AnalysisReport): string {
 
   const bugPaths = new Set(report.bugHotspots.topFiles.map(f => f.path))
 
-  const headerTop = `┌${'─'.repeat(Math.max(3, width - 2))}┐`
-  const title = 'repolyze · repository signals'
-  const subtitle = 'Git history · health signals'
-
   const lines: string[] = []
-  lines.push(paint(headerTop, ansi.dim, color))
-  lines.push(`${paint('│', ansi.dim, color)} ${paint(title, ansi.bold + ansi.cyan, color)}`)
-  lines.push(`${paint('│', ansi.dim, color)} ${paint(subtitle, ansi.dim, color)}`)
-  lines.push(paint(`└${'─'.repeat(Math.max(3, width - 2))}┘`, ansi.dim, color))
+  lines.push(...boxedHeader('repolyze · repository signals', 'Git history · health signals', width, color))
   lines.push('')
 
   const metaLine = [
