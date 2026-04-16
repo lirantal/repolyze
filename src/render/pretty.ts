@@ -300,10 +300,11 @@ export function renderPrettyReport (report: AnalysisReport): string {
       if (tier === 2) return paint('T2', theme.rgb.security, color)
       return paint('T3', ansi.dim, color)
     }
-    for (const m of report.securityHotspots.matches.slice(0, 18)) {
+    const sorted = [...report.securityHotspots.matches].sort((a, b) => a.tier - b.tier)
+    for (const m of sorted.slice(0, 18)) {
       lines.push(`    ${tierLabel(m.tier)}  ${paint(m.hash, ansi.magenta, color)}  ${m.subject}`)
     }
-    const more = report.securityHotspots.matches.length - 18
+    const more = sorted.length - 18
     if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)
     lines.push('')
   }
