@@ -120,9 +120,23 @@ function rankedPathsTable (
   if (rows.length === 0) return [paint('    (no data)', ansi.dim, opts.color)]
 
   const maxTouches = rows.reduce((m, r) => Math.max(m, r.touches), 0)
-  const countCol = 6
-  const barCol = 18
-  const pathCol = Math.max(20, opts.width - countCol - barCol - 6)
+  // Rank | bar | touch count (fixed) | path — matches contributors-style alignment (bar column does not shift with label length).
+  const barCol = 22
+  const countW = 5
+  const rankW = Math.max(2, String(rows.length).length)
+  const prefix = '    '
+  const gapAfterRank = 2
+  const gapAfterBar = 1
+  const gapAfterCount = 2
+  const fixed =
+    prefix.length +
+    rankW +
+    gapAfterRank +
+    barCol +
+    gapAfterBar +
+    countW +
+    gapAfterCount
+  const pathCol = Math.max(8, opts.width - fixed)
 
   const lines: string[] = []
   let rank = 1
@@ -130,9 +144,12 @@ function rankedPathsTable (
     const bug = opts.bugPaths.has(r.path)
     const pathText = truncPath(r.path, pathCol)
     const pathStyled = bug ? paint(pathText, ansi.yellow + ansi.bold, opts.color) : pathText
-    const countText = padRight(String(r.touches), countCol)
+    const rankStr = paint(String(rank).padStart(rankW, ' '), ansi.dim, opts.color)
     const b = bar(r.touches, maxTouches, barCol, opts.color)
-    lines.push(`    ${paint(String(rank).padStart(2, ' '), ansi.dim, opts.color)}  ${pathStyled}  ${paint(countText, ansi.dim, opts.color)} ${b}`)
+    const countStr = paint(String(r.touches).padStart(countW, ' '), ansi.dim, opts.color)
+    lines.push(
+      `${prefix}${rankStr}${' '.repeat(gapAfterRank)}${b}${' '.repeat(gapAfterBar)}${countStr}${' '.repeat(gapAfterCount)}${pathStyled}`
+    )
     rank += 1
   }
 
