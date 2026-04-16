@@ -1,5 +1,13 @@
 # repolyze
 
+## 1.1.0
+
+### Minor Changes
+
+- [`2e2b4b7`](https://github.com/lirantal/repolyze/commit/2e2b4b7a0427dd540fda7aa0e5a0ab24a979b68f) Thanks [@lirantal](https://github.com/lirantal)! - feat: theme overhaul
+
+- [`bc455d7`](https://github.com/lirantal/repolyze/commit/bc455d7d31181aee31975a35c93e23c983f08f2a) Thanks [@lirantal](https://github.com/lirantal)! - feat: security analysis section
+
 ## 1.0.1
 
 ### Patch Changes
