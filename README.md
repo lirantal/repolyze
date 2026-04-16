@@ -53,9 +53,13 @@ Or run **without** installing, using `npx` (downloads the package for that invoc
 npx repolyze --help
 ```
 
-## Credits
+## Credits & References
 
 The default signals this tool collects mirror the git workflow described by **Maciej Piechowski** in *[The Git Commands I Run Before Reading Any Code](https://piechowski.io/post/git-commands-before-reading-code/)*. See [docs/repository-analysis.md](./docs/repository-analysis.md) for command-by-command notes, caveats, and the same attribution in context.
+
+References:
+
+- [fallow-rs](https://github.com/fallow-rs/fallow) - Static analysis for source code health based on git
 
 ## Contributing
 
