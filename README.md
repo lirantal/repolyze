@@ -1,30 +1,57 @@
-
-
-
-
 # repolyze
-
-
 
 Analyze a git source code repository for health signals and project vitals
 
+## Requirements
 
+- [Node.js](https://nodejs.org/) v24 or newer
+- [`git`](https://git-scm.com/) available on your `PATH`
 
 ## Install
 
+Install globally (pick your package manager):
+
 ```sh
-pnpm install repolyze
+npm install -g repolyze
 ```
 
-## Usage: CLI
+```sh
+pnpm add -g repolyze
+```
+
+Or run **without** installing, using `npx` (downloads the package for that invocation):
+
+```sh
+npx repolyze --help
+```
+
+## Usage
+
+Analyze the current directory as a git repository and print JSON (for tooling or AI agents):
 
 ```bash
-pnpm start -- --json .
-pnpm start -- --help
-repolyze --json /path/to/repo
+npx repolyze --json .
 ```
 
-For flags and behavior, run `repolyze --help` (or `pnpm start -- --help` from a clone).
+Analyze another path:
+
+```bash
+npx repolyze --json /path/to/repo
+```
+
+Verbose mode (prints `git` invocations to stderr):
+
+```bash
+npx repolyze --verbose .
+```
+
+Help:
+
+```bash
+npx repolyze --help
+```
+
+When the package is installed globally, use the `repolyze` command the same way (for example `repolyze --json .`).
 
 ## Credits
 
@@ -33,6 +60,8 @@ The default signals this tool collects mirror the git workflow described by **Ma
 ## Contributing
 
 Please consult [CONTRIBUTING](./.github/CONTRIBUTING.md) for guidelines on contributing to this project.
+
+**Developing this repo locally** (running from source, tests, build): see [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Author
 

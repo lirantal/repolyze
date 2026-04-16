@@ -14,7 +14,7 @@ uphold this code.
 
 ## How to contribute to this project
 
-<!-- TODO -->
+Local setup, running the CLI from source, tests, build, and lint are documented in [DEVELOPMENT.md](../DEVELOPMENT.md).
 
 ### Tests
 
@@ -23,7 +23,7 @@ Make sure the code you're adding has decent test coverage.
 Running project tests and coverage:
 
 ```bash
-npm run test
+pnpm test
 ```
 
 ### Commit Guidelines
