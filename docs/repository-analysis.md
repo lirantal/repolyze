@@ -1,6 +1,6 @@
 # Repository analysis signals
 
-This document describes the **git-derived repository signals** that `repolyze` collects before diving into source code. The workflow is inspired by Maciej Piechowski’s article *“The Git Commands I Run Before Reading Any Code”*, which argues that commit history gives a diagnostic picture of a project: ownership, churn, bug clustering, momentum, and crisis patterns.
+This document describes the **git-derived repository signals** that `repolyze` collects before diving into source code. The workflow is inspired by Maciej Piechowski’s article *“The Git Commands I Run Before Reading Any Code”*, which argues that commit history gives a diagnostic picture of a project: ownership, churn, bug clustering, momentum, crisis patterns, and security-fix hotspots.
 
 - **Article**: [The Git Commands I Run Before Reading Any Code](https://piechowski.io/post/git-commands-before-reading-code/)
 - **Author**: Maciej Piechowski
@@ -121,6 +121,144 @@ git log --oneline --since="1 year ago" \
 
 - Matching **one-line commits** in the last year using the same keyword family (`revert`, `hotfix`, `emergency`, `rollback`, case-insensitive).
 - Count and recency for “crisis-shaped” commit traffic.
+
+---
+
+## 6. Where security fixes land (security-keyword file touches)
+
+### Purpose
+
+Surface commits that address **security vulnerabilities** and identify which files they touch. This extends the bug-clustering idea from section 3 with a more targeted keyword set tuned for security work. Files appearing in both churn hotspots (section 1) and security-fix lists are the highest-risk paths in a codebase—frequently changing *and* repeatedly patched for vulnerabilities.
+
+### Research basis
+
+Analysis of nine open-source repositories (axios, nodemailer, express, unhead, PraisonAI, n8n-mcp, magento2-dev-mcp, heim-mcp, saltcorn) revealed that security-relevant commits can be reliably surfaced from git history using a **tiered keyword strategy**. The tiers are ordered from highest confidence / lowest noise to broadest coverage / highest noise.
+
+#### Tier 1 — Advisory identifiers (near-zero false positives)
+
+Commits referencing **GHSA**, **CVE**, or **CWE** identifiers are almost always true security fixes. These identifiers appear in both commit subjects and commit bodies, so a search that covers the full message is essential.
+
+Examples found across the researched repositories:
+
+| Repository | Identifier | Vulnerability |
+|---|---|---|
+| nodemailer | `GHSA-vvjj-xcjg-gr5g` | SMTP command injection via CRLF in transport name |
+| nodemailer | `GHSA-9h6g-pr28-7cqp` | ReDoS in matching patterns |
+| unhead | `GHSA-x7mm-9vvv-64w8` | XSS via unsanitized streamKey in inline scripts |
+| n8n-mcp | `GHSA-4ggg-h7ph-26qr` | SSRF in multi-tenant instance configuration |
+| express | `CVE-2024-51999` | Query string parsing vulnerability |
+| express | `CVE-2026-2391`, `GHSA-w7fw-mjwx-w883` | qs arrayLimit bypass / denial of service |
+| axios | `CVE-2024-39338` | SSRF via protocol-relative URL |
+| axios | `CVE-2023-45857` | CSRF vulnerability |
+| PraisonAI | `CWE-78` | OS command injection via environment variable keys |
+| PraisonAI | `CWE-942` | CORS misconfiguration |
+| PraisonAI | `CVE-2026-22218` | Supply chain / dependency vulnerability |
+
+#### Tier 2 — Conventional commit scopes and GitHub security advisory merges (high confidence)
+
+Many projects use conventional-commit prefixes that flag security work explicitly. Additionally, GitHub produces a distinctive merge commit when a maintainer merges from a **security advisory fork**: the subject reads `"Merge commit from fork"` while the body contains the GHSA identifier and vulnerability description.
+
+Conventional-commit patterns observed:
+
+- `fix(security):` — axios, PraisonAI, n8n-mcp
+- `fix(sec):` — axios, express
+- `fix(vulnerability):` — axios
+- `fix(CSRF):` — axios
+- `sec:` — express
+- `security:` — PraisonAI, n8n-mcp
+
+GitHub security advisory merge pattern observed in: unhead (1 instance), n8n-mcp (3 instances). The generic subject means `--oneline` alone gives no signal—the body must be searched.
+
+#### Tier 3 — Vulnerability-class keywords (moderate confidence, noisier)
+
+Commit messages often name the vulnerability class directly. This tier casts a wider net and will produce some false positives (for example, `"injection"` matching dependency-injection discussions, or `"escape"` matching string-escaping utilities unrelated to security), but it catches fixes that lack formal advisory IDs.
+
+Vulnerability classes observed in the researched repositories:
+
+| Keyword pattern | Repositories where it appeared |
+|---|---|
+| `command injection` | magento2-dev-mcp, heim-mcp, nodemailer |
+| `SSRF` | axios, n8n-mcp |
+| `XSS` | unhead |
+| `path traversal`, `traversal` | saltcorn, PraisonAI, express |
+| `prototype pollution` | axios |
+| `ReDoS` | axios, nodemailer |
+| `CRLF` | nodemailer |
+| `CSRF` | axios |
+| `sandbox escape` | PraisonAI |
+| `injection` (general) | magento2-dev-mcp, heim-mcp, nodemailer, PraisonAI |
+
+### How to run
+
+#### Step 1 — Find security-fix commits (three-tier grep)
+
+**Tier 1** — advisory identifiers:
+
+```bash
+git log --all -i -E --grep="GHSA-|CVE-|CWE-" --oneline
+```
+
+**Tier 2** — security scopes and GitHub advisory merges:
+
+```bash
+git log --all -i -E \
+  --grep="Merge commit from fork" \
+  --grep="fix\(sec" --grep="fix\(security" --grep="fix\(vuln" \
+  --grep="^sec:" --grep="^security:" \
+  --oneline
+```
+
+Multiple `--grep` flags without `--all-match` give **OR** semantics in `git log`.
+
+**Tier 3** — vulnerability-class keywords:
+
+```bash
+git log --all -i -E \
+  --grep="SSRF|XSS|CSRF|injection|traversal|prototype.pollution|ReDoS|sandbox.escape|auth.bypass|command.injection|CRLF|deserialization|open.redirect" \
+  --oneline
+```
+
+#### Step 2 — Files most touched by security-fix commits
+
+Combine all tiers into a single pass and extract file paths:
+
+```bash
+git log --all -i -E \
+  --grep="GHSA-|CVE-|CWE-" \
+  --grep="Merge commit from fork" \
+  --grep="fix\(sec" --grep="fix\(security" --grep="fix\(vuln" \
+  --grep="^sec:" --grep="^security:" \
+  --grep="SSRF|XSS|CSRF|injection|traversal|prototype.pollution|ReDoS|sandbox.escape|auth.bypass|command.injection|CRLF|deserialization|open.redirect" \
+  --format=format: --name-only \
+  | sort | uniq -c | sort -nr | head -20
+```
+
+#### Step 3 — Extract advisory references from commit bodies
+
+For commits with the generic `"Merge commit from fork"` subject, the GHSA identifier lives in the **body**. To retrieve it:
+
+```bash
+git log --all --grep="Merge commit from fork" --format="%H %s%n%b" \
+  | grep -E "GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}"
+```
+
+### Insights we gather
+
+- **Security hotspot paths** ranked by frequency of security-fix touches.
+- **Overlap with churn** (section 1): files appearing in both the churn top-20 and the security-fix top-20 are the highest-risk candidates—they change often *and* have been patched for vulnerabilities.
+- **Overlap with bug hotspots** (section 3): files in both bug-keyword and security-keyword lists indicate paths with persistent quality and security problems.
+- **Recency of last security fix**: a recent fix suggests active security maintenance; a very old last fix (or none) may indicate the project has not been audited recently—or that commit messages do not follow conventions detectable by keyword search.
+- **Security-fix density**: the ratio of security-fix commits to total commits. A high ratio can mean the project has a large attack surface or is security-conscious; a low ratio in a complex project may mean fixes are not labeled.
+- **Advisory coverage**: presence of GHSA/CVE/CWE references signals **responsible disclosure** practices and formal vulnerability tracking. Their absence does not mean no vulnerabilities—just that fixes may not be formally catalogued.
+- **Tier distribution**: if most security commits come from tier 1 (advisory IDs), the project has strong disclosure practices. If they only appear in tier 3 (broad keywords), the signal is weaker and may include false positives.
+
+### Caveats
+
+- Like bug-keyword detection (section 3), this depends entirely on **commit message discipline**. Projects with vague or formulaic messages (`"fix stuff"`, `"update"`) will produce weak or empty signals.
+- The `"Merge commit from fork"` pattern is specific to GitHub's security advisory workflow. Repositories hosted elsewhere or using different merge strategies will not produce this signal.
+- Some security fixes use **generic messages** that no keyword search can catch. For example, PraisonAI's commit `feat(context): enhance agent ledger and monitor functionality` actually contained path-traversal hardening in the diff, but the subject gives no indication of security intent. Keyword grep will miss these.
+- Broad tier-3 keywords like `"injection"` or `"escape"` can match non-security commits (dependency injection frameworks, string escaping utilities). The tiered approach limits noise: tier-1 and tier-2 results should be treated with high confidence, while tier-3 results benefit from human review or cross-referencing with the actual diff.
+- Merge commits can inflate file-touch counts when `--name-only` includes the merge diff. Filtering with `--no-merges` reduces noise but may exclude the advisory merge commits themselves; `repolyze` should count both and let the consumer decide.
 
 ---
 

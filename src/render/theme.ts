@@ -11,6 +11,7 @@ export type RenderTheme = {
     churn: string
     bugs: string
     contributors: string
+    security: string
   }
   activity: {
     // Activity-by-month heat strip colors (kept as-is).
@@ -39,6 +40,8 @@ export function getTheme (): RenderTheme {
       bugs: fgRgb(253, 138, 107),
       // Contributors: #9AD872 (rgb(154, 216, 114))
       contributors: fgRgb(154, 216, 114),
+      // Security: #FA5C5C (rgb(250, 92, 92))
+      security: fgRgb(250, 92, 92),
     },
     activity: {
       heatFg: [

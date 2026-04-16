@@ -20,6 +20,12 @@ export interface FirefightingRow {
   subject: string
 }
 
+export interface SecurityFixRow {
+  hash: string
+  subject: string
+  tier: 1 | 2 | 3
+}
+
 export interface AnalysisInsight {
   id: string
   level: 'info' | 'warn'
@@ -52,6 +58,11 @@ export interface AnalysisReport {
     window: string
     keywordPattern: string
     matches: FirefightingRow[]
+  }
+  securityHotspots: {
+    keywordPattern: string
+    topFiles: RankedPath[]
+    matches: SecurityFixRow[]
   }
   insights: AnalysisInsight[]
 }
