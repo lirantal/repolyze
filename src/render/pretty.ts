@@ -1,18 +1,8 @@
 import type { AnalysisReport, MonthlyCommitCount, RankedPath } from '../analyze/types.ts'
+import { getTheme } from './theme.ts'
 
-const ansi = {
-  reset: '\x1b[0m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  cyan: '\x1b[36m',
-  gray: '\x1b[90m',
-  white: '\x1b[37m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-} as const
+const theme = getTheme()
+const ansi = theme.ansi
 
 function useColor (): boolean {
   return process.stdout.isTTY === true && process.env.NO_COLOR === undefined
@@ -25,14 +15,7 @@ function paint (text: string, code: string, color: boolean): string {
 
 function heatColor (level: number, color: boolean): string {
   const clamped = Math.max(0, Math.min(5, level))
-  const palette = [
-    '\x1b[38;5;235m',
-    '\x1b[38;5;22m',
-    '\x1b[38;5;28m',
-    '\x1b[38;5;34m',
-    '\x1b[38;5;40m',
-    '\x1b[38;5;46m',
-  ] as const
+  const palette = theme.activity.heatFg
   return paint('█', palette[clamped] ?? palette[0], color)
 }
 
@@ -57,7 +40,8 @@ function horizontalRule (label: string, width: number, color: boolean): string {
   const suffix = ' '
   const inner = width - prefix.length - suffix.length - label.length
   const line = inner > 0 ? '─'.repeat(inner) : ''
-  return `${paint(prefix, ansi.dim, color)}${paint(label, ansi.bold + ansi.cyan, color)}${paint(suffix + line, ansi.dim, color)}`
+  // Titles: terminal default (no special color), but keep bold weight.
+  return `${paint(prefix, ansi.dim, color)}${paint(label, ansi.bold, color)}${paint(suffix + line, ansi.dim, color)}`
 }
 
 function boxedHeader (title: string, subtitle: string, width: number, color: boolean): string[] {
@@ -72,18 +56,19 @@ function boxedHeader (title: string, subtitle: string, width: number, color: boo
 
   return [
     paint(top, ansi.dim, color),
-    line(title, (s) => paint(s, ansi.bold + ansi.cyan, color)),
+    // Title: terminal default (no special color), but bold.
+    line(title, (s) => paint(s, ansi.bold, color)),
     line(subtitle, (s) => paint(s, ansi.dim, color)),
     paint(bottom, ansi.dim, color),
   ]
 }
 
-function bar (value: number, max: number, width: number, color: boolean): string {
+function bar (value: number, max: number, width: number, color: boolean, fillCode: string): string {
   if (width <= 0) return ''
   if (max <= 0) return paint('░'.repeat(width), ansi.dim, color)
   const filled = Math.round((value / max) * width)
   const f = Math.max(0, Math.min(width, filled))
-  const a = paint('█'.repeat(f), ansi.green, color)
+  const a = paint('█'.repeat(f), fillCode, color)
   const b = paint('░'.repeat(width - f), ansi.dim, color)
   return `${a}${b}`
 }
@@ -133,7 +118,7 @@ function renderContributionStrip (months: MonthlyCommitCount[], color: boolean, 
 
 function rankedPathsTable (
   rows: RankedPath[],
-  opts: { color: boolean; width: number; bugPaths: Set<string> }
+  opts: { color: boolean; width: number; highlightPaths: Set<string>; tone: 'churn' | 'bugs' }
 ): string[] {
   if (rows.length === 0) return [paint('    (no data)', ansi.dim, opts.color)]
 
@@ -159,11 +144,14 @@ function rankedPathsTable (
   const lines: string[] = []
   let rank = 1
   for (const r of rows) {
-    const bug = opts.bugPaths.has(r.path)
+    const highlight = opts.highlightPaths.has(r.path)
     const pathText = truncPath(r.path, pathCol)
-    const pathStyled = bug ? paint(pathText, ansi.yellow + ansi.bold, opts.color) : pathText
+    const highlightCode = opts.tone === 'bugs' ? theme.rgb.bugs : theme.rgb.churn
+    const pathBase = pathText
+    const pathStyled = highlight ? paint(pathBase, ansi.bold + highlightCode, opts.color) : pathBase
     const rankStr = paint(String(rank).padStart(rankW, ' '), ansi.dim, opts.color)
-    const b = bar(r.touches, maxTouches, barCol, opts.color)
+    const fill = opts.tone === 'bugs' ? theme.rgb.bugs : theme.rgb.churn
+    const b = bar(r.touches, maxTouches, barCol, opts.color, fill)
     const countStr = paint(String(r.touches).padStart(countW, ' '), ansi.dim, opts.color)
     lines.push(
       `${prefix}${rankStr}${' '.repeat(gapAfterRank)}${b}${' '.repeat(gapAfterBar)}${countStr}${' '.repeat(gapAfterCount)}${pathStyled}`
@@ -187,7 +175,7 @@ function contributorsPreview (report: AnalysisReport, color: boolean, limit: num
   const max = rows.reduce((m, r) => Math.max(m, r.commits), 0)
   let rank = 1
   for (const r of shownRows) {
-    const b = bar(r.commits, max, 22, color)
+    const b = bar(r.commits, max, 22, color, theme.rgb.contributors)
     const rankStr = paint(String(rank).padStart(rankW, ' '), ansi.dim, color)
     lines.push(
       `${prefix}${rankStr}${' '.repeat(gapAfterRank)}${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
@@ -206,8 +194,15 @@ function insightsBlock (report: AnalysisReport, color: boolean, width: number): 
 
   const lines: string[] = [horizontalRule('Insights', width, color), '']
   for (const ins of report.insights) {
-    const icon = ins.level === 'warn' ? paint('!', ansi.red + ansi.bold, color) : paint('i', ansi.blue, color)
-    const msg = ins.level === 'warn' ? paint(ins.message, ansi.yellow, color) : ins.message
+    // Insights colors should align with the report sections:
+    // - warn → bug-fixes color
+    // - info → terminal default (no tint)
+    const icon = ins.level === 'warn'
+      ? paint('!', ansi.bold + theme.rgb.bugs, color)
+      : 'i'
+    const msg = ins.level === 'warn'
+      ? paint(ins.message, theme.rgb.bugs, color)
+      : ins.message
     lines.push(`    ${icon}  ${msg}`)
   }
   lines.push('')
@@ -219,6 +214,7 @@ export function renderPrettyReport (report: AnalysisReport): string {
   const width = termWidth()
 
   const bugPaths = new Set(report.bugHotspots.topFiles.map(f => f.path))
+  const churnPaths = new Set(report.churn.topFiles.map(f => f.path))
 
   const lines: string[] = []
   lines.push(...boxedHeader('repolyze · repository signals', 'Git history · health signals', width, color))
@@ -240,12 +236,12 @@ export function renderPrettyReport (report: AnalysisReport): string {
 
   lines.push(horizontalRule(`Churn · top paths · since ${report.churn.window}`, width, color))
   lines.push('')
-  lines.push(...rankedPathsTable(report.churn.topFiles, { color, width, bugPaths }))
+  lines.push(...rankedPathsTable(report.churn.topFiles, { color, width, highlightPaths: bugPaths, tone: 'churn' }))
   lines.push('')
 
   lines.push(horizontalRule(`Bug-keyword hotspots · grep ${report.bugHotspots.pattern}`, width, color))
   lines.push('')
-  lines.push(...rankedPathsTable(report.bugHotspots.topFiles, { color, width, bugPaths: new Set() }))
+  lines.push(...rankedPathsTable(report.bugHotspots.topFiles, { color, width, highlightPaths: churnPaths, tone: 'bugs' }))
   lines.push('')
 
   lines.push(horizontalRule('Contributors · non-merge commits', width, color))
@@ -264,7 +260,7 @@ export function renderPrettyReport (report: AnalysisReport): string {
     const gapAfterRank6 = 2
     let rank6 = 1
     for (const r of sixRows) {
-      const b = bar(r.commits, max6, 22, color)
+      const b = bar(r.commits, max6, 22, color, theme.rgb.contributors)
       const rankStr = paint(String(rank6).padStart(rankW6, ' '), ansi.dim, color)
       lines.push(
         `${prefix6}${rankStr}${' '.repeat(gapAfterRank6)}${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
