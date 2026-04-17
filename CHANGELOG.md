@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.1.2
+
+### Patch Changes
+
+- [`53d558b`](https://github.com/lirantal/repolyze/commit/53d558bd4fed4f75a67e827d72d0ca68746fabe2) Thanks [@lirantal](https://github.com/lirantal)! - feat: re-order contribs section
+
 ## 1.1.1
 
 ### Patch Changes
