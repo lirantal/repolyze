@@ -232,6 +232,13 @@ describe('analyzeRepository (integration)', () => {
     // secFile should appear in top files (touched by all security commits)
     assert.ok(report.securityHotspots.topFiles.some(f => f.path === secFile))
 
+    // otherFile is only touched by excluded commits (body-only + non-advisory fork merge)
+    // so it must NOT appear in topFiles
+    assert.ok(
+      !report.securityHotspots.topFiles.some(f => f.path === otherFile),
+      'files touched only by excluded commits should not appear in topFiles'
+    )
+
     // Advisory coverage insight
     assert.ok(report.insights.some(i => i.id === 'security_advisory_coverage'))
   })
