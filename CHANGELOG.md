@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.1.3
+
+### Patch Changes
+
+- [`e8dfda2`](https://github.com/lirantal/repolyze/commit/e8dfda2ec6979ad6d228bfd91785284b0d704eef) Thanks [@lirantal](https://github.com/lirantal)! - docs: README updates for screenshot and badges
+
 ## 1.1.2
 
 ### Patch Changes
