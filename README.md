@@ -1,6 +1,27 @@
-# repolyze
+<!-- markdownlint-disable -->
 
-Analyze a git source code repository for health signals and project vitals
+<p align="center">
+  <h1 align="center">
+    repolyze
+  </h1>
+</p>
+
+<p align="center">
+  Analyze a git source code repository for health signals and project vitals
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/v/repolyze" alt="npm version"/></a>
+  <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/license/repolyze" alt="license"/></a>
+  <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/dt/repolyze" alt="downloads"/></a>
+  <a href="https://github.com/lirantal/repolyze/actions?workflow=CI"><img src="https://github.com/lirantal/repolyze/workflows/CI/badge.svg" alt="build"/></a>
+  <a href="https://app.codecov.io/gh/lirantal/repolyze"><img src="https://badgen.net/codecov/c/github/lirantal/repolyze" alt="codecov"/></a>
+  <a href="./SECURITY.md"><img src="https://img.shields.io/badge/Security-Responsible%20Disclosure-yellow.svg" alt="Responsible Disclosure Policy" /></a>
+</p>
+
+<p align="center">
+  <img src="./.github/repolyze-screenshot.png" alt="repolyze screenshot" />
+</p>
 
 ## Usage
 
@@ -29,6 +50,16 @@ npx repolyze --help
 ```
 
 When the package is installed globally, use the `repolyze` command the same way (for example `repolyze --json .`).
+
+## Screenshots
+
+<p align="center">
+  <img src="./.github/repolyze-bugs-and-security-hotspots.png" alt="Bugs and security hotspots screenshot" />
+</p>
+
+<p align="center">
+  <img src="./.github/repolyze-contributors.png" alt="Contributors screenshot" />
+</p>
 
 ## Requirements
 
