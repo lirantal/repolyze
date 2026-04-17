@@ -4,38 +4,62 @@ import { renderPrettyReport } from '../src/render/pretty.ts'
 import type { AnalysisReport } from '../src/analyze/types.ts'
 import { REPORT_SCHEMA_VERSION } from '../src/analyze/types.ts'
 
+function stripAnsi (s: string): string {
+  return s.replace(/\u001b\[[0-9;]*m/g, '')
+}
+
+/** Stable substrings from `horizontalRule` titles in `renderPrettyReport` (order matters). */
+function assertPrettySectionMarkerOrder (out: string, markers: readonly string[]): void {
+  const plain = stripAnsi(out)
+  const indices = markers.map((m, i) => {
+    const idx = plain.indexOf(m)
+    assert.ok(idx >= 0, `expected pretty output to contain section marker[${String(i)}]: ${JSON.stringify(m)}`)
+    return idx
+  })
+  for (let i = 1; i < indices.length; i++) {
+    assert.ok(
+      indices[i]! > indices[i - 1]!,
+      `section marker[${String(i)}] (${JSON.stringify(markers[i])}) should appear after marker[${String(i - 1)}] (${JSON.stringify(markers[i - 1])})`
+    )
+  }
+}
+
+const basePrettyFixture = (): Omit<AnalysisReport, 'insights'> => ({
+  schemaVersion: REPORT_SCHEMA_VERSION,
+  generatedAt: '2026-04-15T00:00:00.000Z',
+  repository: {
+    path: '/tmp/repo',
+    topLevel: '/tmp/repo',
+    head: 'deadbeef',
+  },
+  churn: { window: '1 year ago', topFiles: [{ path: 'src/app.ts', touches: 42 }] },
+  contributors: {
+    allTime: [{ name: 'Ada', commits: 10 }],
+    lastYear: [{ name: 'Ada', commits: 10 }],
+    lastSixMonths: [{ name: 'Ada', commits: 4 }],
+  },
+  bugHotspots: { pattern: 'fix|bug|broken', topFiles: [{ path: 'src/app.ts', touches: 3 }] },
+  activityByMonth: [
+    { month: '2026-01', commits: 2 },
+    { month: '2026-02', commits: 6 },
+    { month: '2026-03', commits: 4 },
+  ],
+  firefighting: {
+    window: '1 year ago',
+    keywordPattern: 'revert|hotfix|emergency|rollback',
+    matches: [{ hash: 'abc1234', subject: 'hotfix: patch' }],
+  },
+  securityHotspots: {
+    keywordPattern: 'GHSA-|CVE-|CWE-',
+    topFiles: [{ path: 'src/app.ts', touches: 1 }],
+    matches: [{ hash: 'def5678', subject: 'fix(security): CVE-2024-1234', tier: 1 }],
+  },
+})
+
 describe('renderPrettyReport', () => {
   test('renders a stable report without throwing', () => {
     const report: AnalysisReport = {
-      schemaVersion: REPORT_SCHEMA_VERSION,
-      generatedAt: '2026-04-15T00:00:00.000Z',
-      repository: {
-        path: '/tmp/repo',
-        topLevel: '/tmp/repo',
-        head: 'deadbeef',
-      },
-      churn: { window: '1 year ago', topFiles: [{ path: 'src/app.ts', touches: 42 }] },
-      contributors: {
-        allTime: [{ name: 'Ada', commits: 10 }],
-        lastYear: [{ name: 'Ada', commits: 10 }],
-        lastSixMonths: [{ name: 'Ada', commits: 4 }],
-      },
-      bugHotspots: { pattern: 'fix|bug|broken', topFiles: [{ path: 'src/app.ts', touches: 3 }] },
-      activityByMonth: [
-        { month: '2026-01', commits: 2 },
-        { month: '2026-02', commits: 6 },
-        { month: '2026-03', commits: 4 },
-      ],
-      firefighting: {
-        window: '1 year ago',
-        keywordPattern: 'revert|hotfix|emergency|rollback',
-        matches: [{ hash: 'abc1234', subject: 'hotfix: patch' }],
-      },
-      securityHotspots: {
-        keywordPattern: 'GHSA-|CVE-|CWE-',
-        topFiles: [{ path: 'src/app.ts', touches: 1 }],
-        matches: [{ hash: 'def5678', subject: 'fix(security): CVE-2024-1234', tier: 1 }],
-      },
+      ...basePrettyFixture(),
       insights: [
         { id: 'churn_bug_overlap', level: 'warn', message: 'example overlap' },
         { id: 'squash_merge_caveat', level: 'info', message: 'example caveat' },
@@ -46,5 +70,42 @@ describe('renderPrettyReport', () => {
     assert.ok(out.includes('repolyze'))
     assert.ok(out.includes('src/app.ts'))
     assert.ok(out.includes('Activity by month'))
+  })
+
+  test('main section titles appear in canonical order (with insights)', () => {
+    const report: AnalysisReport = {
+      ...basePrettyFixture(),
+      insights: [
+        { id: 'churn_bug_overlap', level: 'warn', message: 'example overlap' },
+        { id: 'squash_merge_caveat', level: 'info', message: 'example caveat' },
+      ],
+    }
+    const out = renderPrettyReport(report)
+    assertPrettySectionMarkerOrder(out, [
+      'Activity by month ·',
+      'Contributors · non-merge commits',
+      'Churn · top paths · since',
+      'Bug-keyword hotspots · grep',
+      'Firefighting · oneline · since',
+      'Security-fix hotspots ·',
+      '── Insights',
+    ])
+  })
+
+  test('main section titles appear in canonical order (no insights block)', () => {
+    const report: AnalysisReport = {
+      ...basePrettyFixture(),
+      insights: [],
+    }
+    const out = renderPrettyReport(report)
+    assert.strictEqual(stripAnsi(out).includes('── Insights'), false)
+    assertPrettySectionMarkerOrder(out, [
+      'Activity by month ·',
+      'Contributors · non-merge commits',
+      'Churn · top paths · since',
+      'Bug-keyword hotspots · grep',
+      'Firefighting · oneline · since',
+      'Security-fix hotspots ·',
+    ])
   })
 })
