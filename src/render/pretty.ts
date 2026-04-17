@@ -239,16 +239,6 @@ export function renderPrettyReport (report: AnalysisReport): string {
   lines.push(...renderContributionStrip(report.activityByMonth, color, width))
   lines.push('')
 
-  lines.push(horizontalRule(`Churn · top paths · since ${report.churn.window}`, width, color))
-  lines.push('')
-  lines.push(...rankedPathsTable(report.churn.topFiles, { color, width, highlightPaths: bugPaths, tone: 'churn' }))
-  lines.push('')
-
-  lines.push(horizontalRule(`Bug-keyword hotspots · grep ${report.bugHotspots.pattern}`, width, color))
-  lines.push('')
-  lines.push(...rankedPathsTable(report.bugHotspots.topFiles, { color, width, highlightPaths: churnPaths, tone: 'bugs' }))
-  lines.push('')
-
   lines.push(horizontalRule('Contributors · non-merge commits', width, color))
   lines.push('')
   lines.push(paint('    Last year (or all-time if empty):', ansi.dim, color))
@@ -273,6 +263,16 @@ export function renderPrettyReport (report: AnalysisReport): string {
       rank6 += 1
     }
   }
+  lines.push('')
+
+  lines.push(horizontalRule(`Churn · top paths · since ${report.churn.window}`, width, color))
+  lines.push('')
+  lines.push(...rankedPathsTable(report.churn.topFiles, { color, width, highlightPaths: bugPaths, tone: 'churn' }))
+  lines.push('')
+
+  lines.push(horizontalRule(`Bug-keyword hotspots · grep ${report.bugHotspots.pattern}`, width, color))
+  lines.push('')
+  lines.push(...rankedPathsTable(report.bugHotspots.topFiles, { color, width, highlightPaths: churnPaths, tone: 'bugs' }))
   lines.push('')
 
   lines.push(horizontalRule(`Firefighting · oneline · since ${report.firefighting.window} · ${report.firefighting.keywordPattern}`, width, color))
