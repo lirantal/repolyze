@@ -46,6 +46,7 @@
     "coverage:view": "open coverage/lcov-report/index.html",
     "prepare": "husky",
     "prepack": "pnpm run build",
+    "release:create": "changeset && git add .changeset && git commit -m \"chore: release\" && git push origin HEAD --no-verify",
     "version": "changeset version",
     "release": "changeset publish"
   },
