@@ -16,7 +16,6 @@
   <a href="https://www.npmjs.com/package/repolyze"><img src="https://badgen.net/npm/dt/repolyze" alt="downloads"/></a>
   <a href="https://github.com/lirantal/repolyze/actions?workflow=CI"><img src="https://github.com/lirantal/repolyze/workflows/CI/badge.svg" alt="build"/></a>
   <a href="https://app.codecov.io/gh/lirantal/repolyze"><img src="https://badgen.net/codecov/c/github/lirantal/repolyze" alt="codecov"/></a>
-  <a href="https://snyk.io/test/github/lirantal/repolyze"><img src="https://snyk.io/test/github/lirantal/repolyze/badge.svg" alt="Known Vulnerabilities"/></a>
   <a href="./SECURITY.md"><img src="https://img.shields.io/badge/Security-Responsible%20Disclosure-yellow.svg" alt="Responsible Disclosure Policy" /></a>
 </p>
 
