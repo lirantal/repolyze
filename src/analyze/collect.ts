@@ -21,6 +21,7 @@ const SECURITY_TIER3_GREP = 'SSRF|XSS|CSRF|injection|traversal|prototype.polluti
 
 const SECURITY_TIER1_RE = /GHSA-|CVE-|CWE-/i
 const SECURITY_TIER2_RE = /fix\(sec|fix\(security|fix\(vuln|^sec:|^security:/im
+const SECURITY_TIER3_RE = /SSRF|XSS|CSRF|injection|traversal|prototype.pollution|ReDoS|sandbox.escape|auth.bypass|command.injection|CRLF|deserialization|open.redirect/i
 // "Merge commit from fork" is handled separately via a body-aware pass (Step 3)
 const SECURITY_COMBINED_GREP = [SECURITY_TIER1_GREP, ...SECURITY_TIER2_GREPS, SECURITY_TIER3_GREP]
 
@@ -122,13 +123,20 @@ export async function collectSecurityHotspots (
     // are only included when an advisory ID is confirmed in the body.
     if (subject === 'Merge commit from fork') continue
 
+    // git log --grep searches both subject and body.  We classify based on
+    // the subject only: if a commit matched solely because the body contained
+    // a keyword (e.g. "injection" in a changelog paragraph), but the subject
+    // is unrelated, it would be a false positive.  Drop commits whose
+    // subject does not match any tier.
     let tier: 1 | 2 | 3
     if (SECURITY_TIER1_RE.test(subject)) {
       tier = 1
     } else if (SECURITY_TIER2_RE.test(subject)) {
       tier = 2
-    } else {
+    } else if (SECURITY_TIER3_RE.test(subject)) {
       tier = 3
+    } else {
+      continue
     }
     seenHashes.add(hash)
     matches.push({ hash, subject, tier })
@@ -159,17 +167,18 @@ export async function collectSecurityHotspots (
     }
   }
 
-  // Collect file touches — include fork-merge advisory commits in the grep so their
-  // files appear in the hotspot ranking.  The --grep OR may also match non-advisory
-  // fork merges, but in practice GitHub only uses this subject for security advisories.
-  const fileGrepArgs = matches.some(m => m.subject === 'Merge commit from fork')
-    ? [...grepArgs, '--grep=Merge commit from fork']
-    : grepArgs
-  const rawFiles = await runGit(
-    ['log', '--all', '-i', '-E', ...fileGrepArgs, '--format=format:', '--name-only'],
-    { cwd, verbose }
-  )
-  const topFiles = countPathTouches(rawFiles)
+  // Collect file touches only from commits that passed subject-validation.
+  // Using the validated hashes directly avoids counting files from commits
+  // that matched via body-only keywords (false positives).
+  let topFiles: RankedPath[] = []
+  if (matches.length > 0) {
+    const hashArgs = matches.map(m => m.hash)
+    const rawFiles = await runGit(
+      ['show', '--format=format:', '--name-only', ...hashArgs],
+      { cwd, verbose }
+    )
+    topFiles = countPathTouches(rawFiles)
+  }
 
   return { topFiles, matches }
 }
