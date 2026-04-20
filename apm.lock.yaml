@@ -1,0 +1,13 @@
+lockfile_version: '1'
+generated_at: '2026-04-20T17:40:22.377526+00:00'
+apm_version: 0.8.12
+dependencies:
+- repo_url: lirantal/nodejs-cli-apps-best-practices
+  host: github.com
+  resolved_commit: fa504d2fc935eb96454bf68a8f29d9a23d11b19c
+  virtual_path: skills/nodejs-cli-best-practices
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .cursor/skills/nodejs-cli-best-practices
+  content_hash: sha256:f16f92806217984a26025ed1aa31a83bcd565b114e669b55f9fe825fb0e9fa3c

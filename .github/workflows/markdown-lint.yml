@@ -26,4 +26,4 @@ jobs:
 
       - name: Markdown Lint
         run: |
-          pnpm run lint:markdown || pnpx -y markdownlint-cli@0.48.0 -c .github/.markdownlint.yml -i '.git' -i '__tests__' -i '.github' -i '.changeset' -i 'CODE_OF_CONDUCT.md' -i 'CHANGELOG.md' -i 'node_modules' -i 'dist' '**/**.md'
+          pnpm run lint:markdown || pnpx -y markdownlint-cli@0.48.0 -c .github/.markdownlint.yml -i '.git' -i 'apm_modules/**' -i '__tests__' -i '.github' -i '.changeset' -i 'CODE_OF_CONDUCT.md' -i 'CHANGELOG.md' -i 'node_modules' -i 'dist' '**/**.md'

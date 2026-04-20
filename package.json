@@ -38,7 +38,7 @@
     "start": "tsx src/bin/cli.ts",
     "build": "tsc && tsdown",
     "lint": "eslint . && pnpm run lint:markdown",
-    "lint:markdown": "npx -y markdownlint-cli@0.48.0 -c .github/.markdownlint.yml -i '.git' -i '__tests__' -i '.github' -i '.changeset' -i 'CODE_OF_CONDUCT.md' -i 'CHANGELOG.md' -i 'docs/**' -i 'node_modules' -i 'dist' '**/**.md' --fix",
+    "lint:markdown": "npx -y markdownlint-cli@0.48.0 -c .github/.markdownlint.yml -i '.git' -i '__tests__' -i '.github' -i '.changeset' -i 'CODE_OF_CONDUCT.md' -i 'CHANGELOG.md' -i 'docs/**' -i 'apm_modules/**' -i 'node_modules' -i 'dist' '**/**.md' --fix",
     "lint:fix": "eslint . --fix",
     "lint:lockfile": "lockfile-lint --path pnpm-lock.yaml --validate-https --allowed-hosts npm",
     "test": "c8 node --import tsx --test __tests__/**/*.test.ts",
