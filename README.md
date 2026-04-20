@@ -91,6 +91,7 @@ The default signals this tool collects mirror the git workflow described by **Ma
 References:
 
 - [fallow-rs](https://github.com/fallow-rs/fallow) - Static analysis for source code health based on git
+- [vibe-security-radar](https://github.com/HQ1995/vibe-security-radar) - Georgia Tech SSLab research that correlates public CVE/advisory data with git history (blame, fix commits, squash-merge context) and commit-metadata heuristics (co-authors, bot emails, tool markers), with LLM-assisted triage—not a drop-in for repolyze, but a useful contrast for how far you can push **git- and commit-derived** security storytelling
 
 ## Contributing
 
