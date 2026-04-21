@@ -220,6 +220,41 @@ function contributorsPreview (report: AnalysisReport, color: boolean, limit: num
   return contributorsTableRows(rows, color, limit)
 }
 
+function contributorNameKey (name: string): string {
+  return name.trim().toLowerCase()
+}
+
+function contributorRosterChangeText (report: AnalysisReport): string {
+  const baseline = report.contributors.lastYear.length > 0 ? report.contributors.lastYear : report.contributors.allTime
+  const recent = report.contributors.lastSixMonths
+
+  const s1 = new Set(baseline.map(r => contributorNameKey(r.name)))
+  const s2 = new Set(recent.map(r => contributorNameKey(r.name)))
+  const union = new Set([...s1, ...s2])
+
+  if (union.size === 0) {
+    return '(no contributor identities)'
+  }
+
+  let symDiff = 0
+  for (const k of union) {
+    if (!(s1.has(k) && s2.has(k))) symDiff += 1
+  }
+
+  const pct = Math.round((100 * symDiff) / union.size)
+
+  // We can return the same message for both situations: either there's no turnover (identical sets, pct === 0)
+  // or the recent list is empty (degenerate case, but already guarded for no contributors at all above).
+  // In both cases, it's fine to output the "0% — the same distinct contributors appear on both lists above" message.
+  if (pct === 0) {
+    return 'Roster change: 0% — the same distinct contributors appear on both lists above'
+  }
+  if (recent.length === 0) {
+    return 'Roster change: 0% — the same distinct contributors appear on both lists above'
+  }
+  return `Roster change: ${String(pct)}% of contributors appeared or disappeared in the last 6 months compared to the prior period.`
+}
+
 function insightsBlock (report: AnalysisReport, color: boolean, width: number): string[] {
   if (report.insights.length === 0) return []
 
@@ -290,6 +325,8 @@ export function renderPrettyReport (report: AnalysisReport): string {
       rank6 += 1
     }
   }
+  lines.push('')
+  lines.push(`    i  ${paint(contributorRosterChangeText(report), ansi.dim, color)}`)
   lines.push('')
 
   lines.push(horizontalRule(`Churn · top paths · since ${report.churn.window}`, width, color))
