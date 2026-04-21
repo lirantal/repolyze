@@ -1,9 +1,13 @@
-name: "repolyze"
+name: repolyze
 version: 1.0.0
-description: "Analyze a git source code repository for health signals and project vitals"
-author: "Liran Tal"
+description: Analyze a git source code repository for health signals and project vitals
+author: Liran Tal
 dependencies:
   apm:
-    - lirantal/nodejs-cli-apps-best-practices/skills/nodejs-cli-best-practices
-  mcp: []
+  - lirantal/nodejs-cli-apps-best-practices/skills/nodejs-cli-best-practices
+  mcp:
+    - name: nodejs-api-docs
+      registry: false
+      transport: stdio
+      command: "npx mcp-server-nodejs-api-docs"
 scripts: {}
