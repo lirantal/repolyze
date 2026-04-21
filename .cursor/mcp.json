@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "nodejs-api-docs": {
+      "type": "local",
+      "tools": [
+        "*"
+      ],
+      "id": "",
+      "command": "npx mcp-server-nodejs-api-docs",
+      "args": []
+    }
+  }
+}
