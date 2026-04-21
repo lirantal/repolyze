@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.2.0
+
+### Minor Changes
+
+- [`4b6a26d`](https://github.com/lirantal/repolyze/commit/4b6a26d037bd2cd58ddf01b269f9deecc4da23c7) Thanks [@lirantal](https://github.com/lirantal)! - feat: add ai agents and automation bots section
+
 ## 1.1.3
 
 ### Patch Changes
