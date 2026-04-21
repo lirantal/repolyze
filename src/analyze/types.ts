@@ -1,4 +1,7 @@
-export const REPORT_SCHEMA_VERSION = 2 as const
+export const REPORT_SCHEMA_VERSION = 3 as const
+
+/** Max directory segments (excluding filename) used for {@link AnalysisReport.churn} `topDirectories`. */
+export const CHURN_DIRECTORY_DEPTH_MAX = 3 as const
 
 export interface RankedPath {
   path: string
@@ -49,6 +52,9 @@ export interface AnalysisReport {
   churn: {
     window: string
     topFiles: RankedPath[]
+    /** Directory rollup of file touches; keys use at most `directoryDepthMax` path segments. */
+    topDirectories: RankedPath[]
+    directoryDepthMax: typeof CHURN_DIRECTORY_DEPTH_MAX
   }
   contributors: {
     allTime: ContributorRow[]

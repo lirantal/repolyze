@@ -335,6 +335,24 @@ export function renderPrettyReport (report: AnalysisReport): string {
   lines.push(...rankedPathsTable(report.churn.topFiles, { color, width, highlightPaths: bugPaths, tone: 'churn' }))
   lines.push('')
 
+  lines.push(
+    horizontalRule(
+      `Churn · top directories (max depth ${String(report.churn.directoryDepthMax)}) · since ${report.churn.window}`,
+      width,
+      color
+    )
+  )
+  lines.push('')
+  lines.push(
+    ...rankedPathsTable(report.churn.topDirectories, {
+      color,
+      width,
+      highlightPaths: new Set(),
+      tone: 'churn',
+    })
+  )
+  lines.push('')
+
   lines.push(horizontalRule(`Bug-keyword hotspots · grep ${report.bugHotspots.pattern}`, width, color))
   lines.push('')
   lines.push(...rankedPathsTable(report.bugHotspots.topFiles, { color, width, highlightPaths: churnPaths, tone: 'bugs' }))

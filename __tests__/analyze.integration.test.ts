@@ -26,6 +26,7 @@ describe('analyzeRepository (integration)', () => {
     const report = await analyzeRepository(dir)
     assert.strictEqual(report.repository.head, null)
     assert.deepStrictEqual(report.churn.topFiles, [])
+    assert.deepStrictEqual(report.churn.topDirectories, [])
     assert.deepStrictEqual(report.activityByMonth, [])
     assert.ok(report.insights.some(i => i.id === 'no_commits'))
   })
@@ -108,12 +109,19 @@ describe('analyzeRepository (integration)', () => {
 
     const report = await analyzeRepository(dir)
 
-    assert.strictEqual(report.schemaVersion, 2)
+    assert.strictEqual(report.schemaVersion, 3)
     assert.ok(report.repository.head !== null)
 
     const churnTop = report.churn.topFiles[0]
     assert.ok(churnTop !== undefined)
     assert.strictEqual(churnTop.path, hot)
+
+    assert.strictEqual(report.churn.directoryDepthMax, 3)
+    const churnDirTop = report.churn.topDirectories[0]
+    assert.ok(churnDirTop !== undefined)
+    assert.strictEqual(churnDirTop.path, 'src')
+    // Churn window is ~1 year; older commits in this fixture fall outside it, so only recent `src/hot.ts` touches roll up here.
+    assert.strictEqual(churnDirTop.touches, 7)
 
     const bugTop = report.bugHotspots.topFiles.find(f => f.path === hot)
     assert.ok(bugTop !== undefined)
