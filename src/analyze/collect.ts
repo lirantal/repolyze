@@ -19,7 +19,6 @@ const SHORTLOG_YEAR = '1 year ago'
 const SHORTLOG_SIX_MONTHS = '6 months ago'
 const BUG_GREP = 'fix|bug|broken'
 const FIRE_KEYWORDS = 'revert|hotfix|emergency|rollback'
-const FIRE_RE = new RegExp(FIRE_KEYWORDS, 'i')
 
 const SECURITY_TIER1_GREP = 'GHSA-|CVE-|CWE-'
 const SECURITY_TIER2_GREPS = [
@@ -176,17 +175,11 @@ export async function collectActivityByMonth (cwd: string, verbose?: boolean): P
     .map(([month, commits]) => ({ month, commits }))
 }
 
-export async function collectFirefighting (cwd: string, verbose?: boolean): Promise<FirefightingRow[]> {
-  const raw = await runGit(
-    ['log', '--oneline', `--since=${FIRE_WINDOW}`],
-    { cwd, verbose }
-  )
-
+function parseFirefightingOnelineLog (raw: string): FirefightingRow[] {
   const matches: FirefightingRow[] = []
   for (const line of raw.split('\n')) {
     const trimmed = line.trim()
     if (trimmed.length === 0) continue
-    if (!FIRE_RE.test(trimmed)) continue
 
     const space = trimmed.indexOf(' ')
     if (space === -1) continue
@@ -194,8 +187,23 @@ export async function collectFirefighting (cwd: string, verbose?: boolean): Prom
     const subject = trimmed.slice(space + 1)
     matches.push({ hash, subject })
   }
-
   return matches
+}
+
+export async function collectFirefighting (
+  cwd: string,
+  verbose?: boolean
+): Promise<{ matches: FirefightingRow[]; topFiles: RankedPath[] }> {
+  const grepLogArgs = ['log', '-i', '-E', `--grep=${FIRE_KEYWORDS}`, `--since=${FIRE_WINDOW}`] as const
+  const [onelineRaw, pathsRaw] = await Promise.all([
+    runGit([...grepLogArgs, '--oneline'], { cwd, verbose }),
+    runGit([...grepLogArgs, '--name-only', '--format='], { cwd, verbose }),
+  ])
+
+  return {
+    matches: parseFirefightingOnelineLog(onelineRaw),
+    topFiles: countPathTouches(pathsRaw),
+  }
 }
 
 export async function collectSecurityHotspots (

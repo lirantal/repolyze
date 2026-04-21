@@ -97,6 +97,15 @@ describe('analyzeRepository (integration)', () => {
       authorEmail: 'bob@example.com',
     })
 
+    await writeAndCommit(dir, {
+      file: hot,
+      content: 'rolled back\n',
+      message: 'Revert "iterate hot 0"',
+      date: isoDaysAgo(5),
+      authorName: 'Bob',
+      authorEmail: 'bob@example.com',
+    })
+
     const report = await analyzeRepository(dir)
 
     assert.strictEqual(report.schemaVersion, 2)
@@ -111,6 +120,10 @@ describe('analyzeRepository (integration)', () => {
 
     assert.ok(report.activityByMonth.length > 0)
     assert.ok(report.firefighting.matches.some(m => /hotfix/i.test(m.subject)))
+    assert.ok(report.firefighting.matches.some(m => /^Revert\b/i.test(m.subject)))
+
+    const fireHot = report.firefighting.topFiles.find(f => f.path === hot)
+    assert.ok(fireHot !== undefined && fireHot.touches >= 1)
 
     const bobLastYear = report.contributors.lastYear.find(c => c.name.includes('Bob'))
     const aliceLastYear = report.contributors.lastYear.find(c => c.name.includes('Alice'))

@@ -117,12 +117,13 @@ function renderContributionStrip (months: MonthlyCommitCount[], color: boolean, 
   return out
 }
 
-type TableTone = 'churn' | 'bugs' | 'security' | 'aiTooling'
+type TableTone = 'churn' | 'bugs' | 'security' | 'aiTooling' | 'firefighting'
 
 function toneColor (tone: TableTone): string {
   if (tone === 'bugs') return theme.rgb.bugs
   if (tone === 'security') return theme.rgb.security
   if (tone === 'aiTooling') return theme.rgb.aiTooling
+  if (tone === 'firefighting') return theme.rgb.firefighting
   return theme.rgb.churn
 }
 
@@ -339,16 +340,46 @@ export function renderPrettyReport (report: AnalysisReport): string {
   lines.push(...rankedPathsTable(report.bugHotspots.topFiles, { color, width, highlightPaths: churnPaths, tone: 'bugs' }))
   lines.push('')
 
-  lines.push(horizontalRule(`Firefighting · oneline · since ${report.firefighting.window} · ${report.firefighting.keywordPattern}`, width, color))
+  lines.push(
+    horizontalRule(
+      `Firefighting · top paths · since ${report.firefighting.window} · grep ${report.firefighting.keywordPattern}`,
+      width,
+      color
+    )
+  )
   lines.push('')
   if (report.firefighting.matches.length === 0) {
     lines.push(paint('    (no matches)', ansi.dim, color))
   } else {
-    for (const m of report.firefighting.matches.slice(0, 18)) {
+    lines.push(
+      paint(
+        '    Paths ranked by touches in commits whose message matches the keyword pattern (subject or body).',
+        ansi.dim,
+        color
+      )
+    )
+    lines.push('')
+    lines.push(
+      ...rankedPathsTable(report.firefighting.topFiles, {
+        color,
+        width,
+        highlightPaths: churnPaths,
+        tone: 'firefighting',
+      })
+    )
+    lines.push('')
+    lines.push(paint('    Recent matching commits (most recent first):', ansi.dim, color))
+    lines.push('')
+    const recentFire = report.firefighting.matches.slice(0, 5)
+    for (const m of recentFire) {
       lines.push(`    ${paint(m.hash, theme.rgb.commitHash, color)}  ${m.subject}`)
     }
-    const more = report.firefighting.matches.length - 18
-    if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)
+    const older = report.firefighting.matches.length - recentFire.length
+    if (older > 0) {
+      lines.push(
+        `    ${paint(`… and ${String(older)} older matching commit${older === 1 ? '' : 's'} (full list in JSON)`, ansi.dim, color)}`
+      )
+    }
   }
   lines.push('')
 

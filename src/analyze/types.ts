@@ -63,6 +63,7 @@ export interface AnalysisReport {
   firefighting: {
     window: string
     keywordPattern: string
+    topFiles: RankedPath[]
     matches: FirefightingRow[]
   }
   securityHotspots: {
