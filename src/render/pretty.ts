@@ -1,4 +1,5 @@
-import type { AnalysisReport, MonthlyCommitCount, RankedPath } from '../analyze/types.ts'
+import { isAgentToolingContributorRow, isLikelyAiBotContributorName } from '../analyze/aiToolingPatterns.ts'
+import type { AnalysisReport, ContributorRow, MonthlyCommitCount, RankedPath } from '../analyze/types.ts'
 import { getTheme } from './theme.ts'
 
 const theme = getTheme()
@@ -116,12 +117,27 @@ function renderContributionStrip (months: MonthlyCommitCount[], color: boolean, 
   return out
 }
 
-type TableTone = 'churn' | 'bugs' | 'security'
+type TableTone = 'churn' | 'bugs' | 'security' | 'aiTooling'
 
 function toneColor (tone: TableTone): string {
   if (tone === 'bugs') return theme.rgb.bugs
   if (tone === 'security') return theme.rgb.security
+  if (tone === 'aiTooling') return theme.rgb.aiTooling
   return theme.rgb.churn
+}
+
+function contributorNameCell (name: string, color: boolean): string {
+  if (isLikelyAiBotContributorName(name)) {
+    return paint(padRight(name, 28), ansi.bold + theme.rgb.contributors, color)
+  }
+  return paint(padRight(name, 28), ansi.white, color)
+}
+
+function agentToolingContributorNameCell (name: string, color: boolean): string {
+  if (isAgentToolingContributorRow(name)) {
+    return paint(padRight(name, 28), ansi.bold + theme.rgb.aiTooling, color)
+  }
+  return paint(padRight(name, 28), ansi.white, color)
 }
 
 function rankedPathsTable (
@@ -167,9 +183,14 @@ function rankedPathsTable (
   return lines
 }
 
-function contributorsPreview (report: AnalysisReport, color: boolean, limit: number): string[] {
+function contributorsTableRows (
+  rows: ContributorRow[],
+  color: boolean,
+  limit: number,
+  nameCell: (name: string, color: boolean) => string = contributorNameCell,
+  barFill: string = theme.rgb.contributors
+): string[] {
   const lines: string[] = []
-  const rows = report.contributors.lastYear.length > 0 ? report.contributors.lastYear : report.contributors.allTime
   if (rows.length === 0) return [paint('    (no data)', ansi.dim, color)]
 
   const shownRows = rows.slice(0, limit)
@@ -180,10 +201,10 @@ function contributorsPreview (report: AnalysisReport, color: boolean, limit: num
   const max = rows.reduce((m, r) => Math.max(m, r.commits), 0)
   let rank = 1
   for (const r of shownRows) {
-    const b = bar(r.commits, max, 22, color, theme.rgb.contributors)
+    const b = bar(r.commits, max, 22, color, barFill)
     const rankStr = paint(String(rank).padStart(rankW, ' '), ansi.dim, color)
     lines.push(
-      `${prefix}${rankStr}${' '.repeat(gapAfterRank)}${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
+      `${prefix}${rankStr}${' '.repeat(gapAfterRank)}${nameCell(r.name, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
     )
     rank += 1
   }
@@ -192,6 +213,11 @@ function contributorsPreview (report: AnalysisReport, color: boolean, limit: num
   if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)
 
   return lines
+}
+
+function contributorsPreview (report: AnalysisReport, color: boolean, limit: number): string[] {
+  const rows = report.contributors.lastYear.length > 0 ? report.contributors.lastYear : report.contributors.allTime
+  return contributorsTableRows(rows, color, limit)
 }
 
 function insightsBlock (report: AnalysisReport, color: boolean, width: number): string[] {
@@ -220,6 +246,7 @@ export function renderPrettyReport (report: AnalysisReport): string {
 
   const bugPaths = new Set(report.bugHotspots.topFiles.map(f => f.path))
   const churnPaths = new Set(report.churn.topFiles.map(f => f.path))
+  const securityPathsForAiOverlap = new Set(report.securityHotspots.topFiles.map(f => f.path))
 
   const lines: string[] = []
   lines.push(...boxedHeader('repolyze · repository signals', 'Git history · health signals', width, color))
@@ -258,7 +285,7 @@ export function renderPrettyReport (report: AnalysisReport): string {
       const b = bar(r.commits, max6, 22, color, theme.rgb.contributors)
       const rankStr = paint(String(rank6).padStart(rankW6, ' '), ansi.dim, color)
       lines.push(
-        `${prefix6}${rankStr}${' '.repeat(gapAfterRank6)}${paint(padRight(r.name, 28), ansi.white, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
+        `${prefix6}${rankStr}${' '.repeat(gapAfterRank6)}${contributorNameCell(r.name, color)} ${paint(String(r.commits).padStart(5, ' '), ansi.dim, color)}  ${b}`
       )
       rank6 += 1
     }
@@ -281,11 +308,52 @@ export function renderPrettyReport (report: AnalysisReport): string {
     lines.push(paint('    (no matches)', ansi.dim, color))
   } else {
     for (const m of report.firefighting.matches.slice(0, 18)) {
-      lines.push(`    ${paint(m.hash, ansi.magenta, color)}  ${m.subject}`)
+      lines.push(`    ${paint(m.hash, theme.rgb.commitHash, color)}  ${m.subject}`)
     }
     const more = report.firefighting.matches.length - 18
     if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)
   }
+  lines.push('')
+
+  lines.push(
+    horizontalRule(
+      `AI / automation tooling · paths & agents · since ${report.aiToolingHotspots.window}`,
+      width,
+      color
+    )
+  )
+  lines.push('')
+  lines.push(
+    paint(
+      '    Paths ranked by touches in commits classified as agent/automation-assisted (Co-authored-by trailers + known agent / GitHub App emails).',
+      ansi.dim,
+      color
+    )
+  )
+  lines.push(
+    paint(
+      '    Bold paths also appear in security-fix hotspots (overlap, not causality).',
+      ansi.dim,
+      color
+    )
+  )
+  lines.push('')
+  lines.push(...rankedPathsTable(report.aiToolingHotspots.topFiles, {
+    color,
+    width,
+    highlightPaths: securityPathsForAiOverlap,
+    tone: 'aiTooling',
+  }))
+  lines.push('')
+  lines.push(paint('    Agent & bot identities · commit contributions', ansi.bold, color))
+  lines.push('')
+  lines.push(...contributorsTableRows(
+    report.aiToolingHotspots.trackedBotContributors,
+    color,
+    12,
+    agentToolingContributorNameCell,
+    theme.rgb.aiTooling
+  ))
   lines.push('')
 
   const securityChurnOverlap = new Set(report.churn.topFiles.map(f => f.path))
@@ -302,7 +370,7 @@ export function renderPrettyReport (report: AnalysisReport): string {
     }
     const sorted = [...report.securityHotspots.matches].sort((a, b) => a.tier - b.tier)
     for (const m of sorted.slice(0, 18)) {
-      lines.push(`    ${tierLabel(m.tier)}  ${paint(m.hash, ansi.magenta, color)}  ${m.subject}`)
+      lines.push(`    ${tierLabel(m.tier)}  ${paint(m.hash, theme.rgb.commitHash, color)}  ${m.subject}`)
     }
     const more = sorted.length - 18
     if (more > 0) lines.push(`    ${paint(`… ${String(more)} more`, ansi.dim, color)}`)

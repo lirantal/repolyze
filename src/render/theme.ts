@@ -5,13 +5,16 @@ export type RenderTheme = {
     bold: string
     gray: string
     white: string
-    magenta: string
   }
   rgb: {
     churn: string
     bugs: string
     contributors: string
     security: string
+    /** AI / automation tooling section only: paths table + commit-contribution bars. */
+    aiTooling: string
+    /** Short commit hashes in firefighting / security lists (distinct from aiTooling purple). */
+    commitHash: string
   }
   activity: {
     // Activity-by-month heat strip colors (kept as-is).
@@ -31,7 +34,6 @@ export function getTheme (): RenderTheme {
       bold: '\x1b[1m',
       gray: '\x1b[90m',
       white: '\x1b[37m',
-      magenta: '\x1b[35m',
     },
     rgb: {
       // Churn: #FEC288 (rgb(254, 194, 136))
@@ -42,6 +44,10 @@ export function getTheme (): RenderTheme {
       contributors: fgRgb(154, 216, 114),
       // Security: #FA5C5C (rgb(250, 92, 92))
       security: fgRgb(250, 92, 92),
+      // AI tooling paths + bars: light purple (rgb(198, 170, 255))
+      aiTooling: fgRgb(198, 170, 255),
+      // Commit SHAs in lists: warm amber (rgb(229, 178, 102)) — not blue / not purple
+      commitHash: fgRgb(229, 178, 102),
     },
     activity: {
       heatFg: [

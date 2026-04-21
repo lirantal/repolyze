@@ -94,7 +94,7 @@ Usage:
 Options:
   -h, --help      Show help
   -v, --verbose   Print git commands to stderr
-  --json          Emit JSON (schemaVersion: 1) on stdout
+  --json          Emit JSON (schemaVersion: 2) on stdout
 
 Arguments:
   repository      Path to analyze (defaults to the current working directory)

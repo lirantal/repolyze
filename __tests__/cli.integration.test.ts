@@ -32,7 +32,7 @@ describe('repolyze CLI (integration)', () => {
     )
 
     const report = JSON.parse(String(stdout)) as { schemaVersion: number; repository: { head: string | null } }
-    assert.strictEqual(report.schemaVersion, 1)
+    assert.strictEqual(report.schemaVersion, 2)
     assert.ok(report.repository.head !== null)
   })
 
