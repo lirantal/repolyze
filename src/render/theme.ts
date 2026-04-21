@@ -13,6 +13,8 @@ export type RenderTheme = {
     security: string
     /** AI / automation tooling section only: paths table + commit-contribution bars. */
     aiTooling: string
+    /** Firefighting path hotspot bars (revert / hotfix / rollback touches). */
+    firefighting: string
     /** Short commit hashes in firefighting / security lists (distinct from aiTooling purple). */
     commitHash: string
   }
@@ -46,6 +48,8 @@ export function getTheme (): RenderTheme {
       security: fgRgb(250, 92, 92),
       // AI tooling paths + bars: light purple (rgb(198, 170, 255))
       aiTooling: fgRgb(198, 170, 255),
+      // Firefighting: deep orange (rgb(255, 145, 85))
+      firefighting: fgRgb(255, 145, 85),
       // Commit SHAs in lists: warm amber (rgb(229, 178, 102)) — not blue / not purple
       commitHash: fgRgb(229, 178, 102),
     },

@@ -56,6 +56,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
       firefighting: {
         window: windows.firefighting,
         keywordPattern: patterns.firefighting,
+        topFiles: [],
         matches: [],
       },
       securityHotspots: {
@@ -83,7 +84,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     churnTopFiles,
     bugHotspotsTopFiles,
     activityByMonth,
-    firefightingMatches,
+    firefightingResult,
     contributorsAllTime,
     contributorsLastYear,
     contributorsLastSixMonths,
@@ -126,7 +127,8 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     firefighting: {
       window: windows.firefighting,
       keywordPattern: patterns.firefighting,
-      matches: firefightingMatches,
+      topFiles: firefightingResult.topFiles,
+      matches: firefightingResult.matches,
     },
     securityHotspots: {
       keywordPattern: patterns.security,

@@ -121,15 +121,24 @@ Detect **incident-driven** commit patterns via message keywords. The article fra
 
 ### How to run (article)
 
+Commits whose **subject or body** matches the keyword family (same as `repolyze`’s grep pass):
+
 ```bash
-git log --oneline --since="1 year ago" \
-  | grep -iE 'revert|hotfix|emergency|rollback'
+git log -i -E --grep='revert|hotfix|emergency|rollback' --oneline --since="1 year ago"
+```
+
+Paths touched by those commits (ranked by touch count, capped like other hotspot tables):
+
+```bash
+git log -i -E --grep='revert|hotfix|emergency|rollback' \
+  --name-only --format= --since="1 year ago"
 ```
 
 ### Insights we gather
 
-- Matching **one-line commits** in the last year using the same keyword family (`revert`, `hotfix`, `emergency`, `rollback`, case-insensitive).
-- Count and recency for “crisis-shaped” commit traffic.
+- **Ranked paths** in the configured window: each time a matching commit lists a path in `git log --name-only`, that path’s touch count increments (top 20 paths, same aggregation style as churn and bug-keyword hotspots). Large merges can list many paths in one commit, so counts reflect “appears in crisis-shaped commits,” not necessarily sustained edit churn.
+- **Matching commits** in newest-first order, using the same extended-regexp keyword list (`revert`, `hotfix`, `emergency`, `rollback`, case-insensitive) and window as the path query.
+- **Machine vs terminal**: JSON (`--json`) includes the **full** ordered `matches` list for tooling. Human-readable output shows the path table first, then the **five most recent** matching commits, with a short note that older matches exist in JSON when there are more than five.
 
 ---
 

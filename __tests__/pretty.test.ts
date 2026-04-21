@@ -47,6 +47,7 @@ const basePrettyFixture = (): Omit<AnalysisReport, 'insights'> => ({
   firefighting: {
     window: '1 year ago',
     keywordPattern: 'revert|hotfix|emergency|rollback',
+    topFiles: [{ path: 'src/app.ts', touches: 2 }],
     matches: [{ hash: 'abc1234', subject: 'hotfix: patch' }],
   },
   securityHotspots: {
@@ -113,7 +114,7 @@ describe('renderPrettyReport', () => {
       'Contributors · non-merge commits',
       'Churn · top paths · since',
       'Bug-keyword hotspots · grep',
-      'Firefighting · oneline · since',
+      'Firefighting · top paths · since',
       'AI / automation tooling · paths & agents · since',
       'Security-fix hotspots ·',
       '── Insights',
@@ -132,7 +133,7 @@ describe('renderPrettyReport', () => {
       'Contributors · non-merge commits',
       'Churn · top paths · since',
       'Bug-keyword hotspots · grep',
-      'Firefighting · oneline · since',
+      'Firefighting · top paths · since',
       'AI / automation tooling · paths & agents · since',
       'Security-fix hotspots ·',
     ])
@@ -182,5 +183,30 @@ describe('renderPrettyReport', () => {
     const plain = stripAnsi(renderPrettyReport(report))
     assert.ok(plain.includes('Roster change: 0%'))
     assert.ok(plain.includes('the same distinct contributors appear on both lists above'))
+  })
+
+  test('firefighting lists at most five recent commits and notes older matches for JSON', () => {
+    const base = basePrettyFixture()
+    const matches = Array.from({ length: 7 }, (_, i) => ({
+      hash: `abc000${String(i)}`,
+      subject: `hotfix ${String(i)}`,
+    }))
+    const report: AnalysisReport = {
+      ...base,
+      firefighting: {
+        ...base.firefighting,
+        topFiles: [{ path: 'src/x.ts', touches: 7 }],
+        matches,
+      },
+      insights: [],
+    }
+    const plain = stripAnsi(renderPrettyReport(report))
+    const start = plain.indexOf('Recent matching commits')
+    const end = plain.indexOf('AI / automation tooling')
+    assert.ok(start >= 0 && end > start)
+    const slice = plain.slice(start, end)
+    const commitLines = slice.split('\n').filter((line) => /^\s{4}[0-9a-f]{7}\s+/.test(line))
+    assert.strictEqual(commitLines.length, 5)
+    assert.ok(plain.includes('… and 2 older matching commits (full list in JSON)'))
   })
 })
