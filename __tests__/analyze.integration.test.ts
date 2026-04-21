@@ -99,7 +99,7 @@ describe('analyzeRepository (integration)', () => {
 
     const report = await analyzeRepository(dir)
 
-    assert.strictEqual(report.schemaVersion, 1)
+    assert.strictEqual(report.schemaVersion, 2)
     assert.ok(report.repository.head !== null)
 
     const churnTop = report.churn.topFiles[0]
@@ -241,5 +241,242 @@ describe('analyzeRepository (integration)', () => {
 
     // Advisory coverage insight
     assert.ok(report.insights.some(i => i.id === 'security_advisory_coverage'))
+  })
+
+  test('collects AI / automation tooling hotspots from trailers and GitHub bot authors', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    const agentFile = 'src/agent.ts'
+    const otherFile = 'src/other.ts'
+
+    await writeAndCommit(dir, {
+      file: otherFile,
+      content: 'x\n',
+      message: 'init',
+      date: isoDaysAgo(200),
+    })
+
+    await writeAndCommit(dir, {
+      file: agentFile,
+      content: 'v1\n',
+      message: 'feat: sweep\n\nCo-authored-by: Copilot <123+copilot-swe-agent[bot]@users.noreply.github.com>',
+      date: isoDaysAgo(100),
+    })
+
+    await writeAndCommit(dir, {
+      file: agentFile,
+      content: 'v2\n',
+      message: 'chore: bot touch',
+      date: isoDaysAgo(50),
+      authorName: 'copilot-swe-agent[bot]',
+      authorEmail: '999+copilot-swe-agent[bot]@users.noreply.github.com',
+    })
+
+    await writeAndCommit(dir, {
+      file: otherFile,
+      content: 'y\n',
+      message: 'feat: human\n\nCo-authored-by: Claude Opus <wrong@example.com>',
+      date: isoDaysAgo(40),
+    })
+
+    const report = await analyzeRepository(dir)
+
+    const aiTop = report.aiToolingHotspots.topFiles.find(f => f.path === agentFile)
+    assert.ok(aiTop !== undefined)
+    assert.strictEqual(aiTop.touches, 2)
+
+    const botAuthor = report.aiToolingHotspots.topAuthors.find(a => a.name.includes('copilot-swe-agent'))
+    assert.ok(botAuthor !== undefined)
+    assert.strictEqual(botAuthor.commits, 2)
+
+    const tracked = report.aiToolingHotspots.trackedBotContributors.find(
+      r => r.name === 'copilot-swe-agent[bot]',
+    )
+    assert.ok(tracked !== undefined)
+    assert.strictEqual(tracked.commits, 2)
+
+    assert.ok(
+      !report.aiToolingHotspots.matches.some(m => /Claude Opus|wrong@example/.test(m.subject)),
+      'spoofed Co-authored-by without a trusted bot identity should not be classified',
+    )
+  })
+
+  test('counts GitHub Actions direct author commits in AI paths and agent identity rows', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    await writeAndCommit(dir, {
+      file: 'ci.yml',
+      content: 'on: push\n',
+      message: 'init',
+      date: isoDaysAgo(30),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'ci.yml',
+      content: 'on: [push]\n',
+      message: 'ci: bump',
+      date: isoDaysAgo(5),
+      authorName: 'GitHub Actions',
+      authorEmail: '41898282+github-actions[bot]@users.noreply.github.com',
+    })
+
+    const report = await analyzeRepository(dir)
+    const ci = report.aiToolingHotspots.topFiles.find(f => f.path === 'ci.yml')
+    assert.ok(ci !== undefined)
+    assert.strictEqual(ci.touches, 1)
+
+    const ga = report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'github-actions[bot]')
+    assert.ok(ga !== undefined)
+    assert.strictEqual(ga.commits, 1)
+
+    const top = report.aiToolingHotspots.topAuthors.find(r => r.name === 'github-actions[bot]')
+    assert.ok(top !== undefined)
+    assert.strictEqual(top.commits, 1)
+  })
+
+  test('counts GitHub Actions with actions@github.com (changelog / workflow commits)', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    await writeAndCommit(dir, {
+      file: 'CHANGELOG.md',
+      content: '# v1\n',
+      message: 'init',
+      date: isoDaysAgo(40),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'CHANGELOG.md',
+      content: '# v1.1\n',
+      message: 'chore: Update CHANGELOG.md',
+      date: isoDaysAgo(2),
+      authorName: 'GitHub Actions',
+      authorEmail: 'actions@github.com',
+    })
+
+    const report = await analyzeRepository(dir)
+    const ga = report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'GitHub Actions')
+    assert.ok(ga !== undefined)
+    assert.strictEqual(ga.commits, 1)
+    const ch = report.aiToolingHotspots.topFiles.find(f => f.path === 'CHANGELOG.md')
+    assert.ok(ch !== undefined)
+    assert.strictEqual(ch.touches, 1)
+  })
+
+  test('counts GitHub Actions with bare noreply email (no numeric prefix)', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    await writeAndCommit(dir, {
+      file: 'workflow.yml',
+      content: 'on: push\n',
+      message: 'init',
+      date: isoDaysAgo(20),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'workflow.yml',
+      content: 'on: workflow_dispatch\n',
+      message: 'ci: dispatch',
+      date: isoDaysAgo(3),
+      authorName: 'GitHub Actions',
+      authorEmail: 'github-actions[bot]@users.noreply.github.com',
+    })
+
+    const report = await analyzeRepository(dir)
+    const ga = report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'github-actions[bot]')
+    assert.ok(ga !== undefined)
+    assert.strictEqual(ga.commits, 1)
+  })
+
+  test('credits every listed bot trailer on a single commit for trackedBotContributors', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    await writeAndCommit(dir, {
+      file: 'README.md',
+      content: '# hi\n',
+      message: 'init',
+      date: isoDaysAgo(10),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'README.md',
+      content: '# hi2\n',
+      message:
+        'chore: bump\n\nCo-authored-by: Dependabot <1+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Copilot <2+copilot-swe-agent[bot]@users.noreply.github.com>',
+      date: isoDaysAgo(5),
+    })
+
+    const report = await analyzeRepository(dir)
+    const dep = report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'dependabot[bot]')
+    const cop = report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'copilot-swe-agent[bot]')
+    assert.ok(dep !== undefined && dep.commits === 1)
+    assert.ok(cop !== undefined && cop.commits === 1)
+  })
+
+  test('tracks Anthropic, Windsurf, and Cursor co-authors in trackedBotContributors', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    await writeAndCommit(dir, {
+      file: 'a.ts',
+      content: '1\n',
+      message: 'init',
+      date: isoDaysAgo(20),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'a.ts',
+      content: '2\n',
+      message: 'feat: claude\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>',
+      date: isoDaysAgo(15),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'a.ts',
+      content: '3\n',
+      message: 'feat: windsurf\n\nCo-authored-by: Windsurf Agent <windsurf@codeium.com>',
+      date: isoDaysAgo(10),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'a.ts',
+      content: '4\n',
+      message: 'feat: cursor\n\nCo-authored-by: Cursor Agent <cursoragent@cursor.com>',
+      date: isoDaysAgo(5),
+    })
+
+    const report = await analyzeRepository(dir)
+    const names = new Set(report.aiToolingHotspots.trackedBotContributors.map(r => r.name))
+    assert.ok(names.has('Claude (Anthropic)'))
+    assert.ok(names.has('Windsurf'))
+    assert.ok(names.has('Cursor'))
+    assert.strictEqual(
+      report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'Claude (Anthropic)')?.commits,
+      1,
+    )
+    assert.strictEqual(
+      report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'Windsurf')?.commits,
+      1,
+    )
+    assert.strictEqual(
+      report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'Cursor')?.commits,
+      1,
+    )
   })
 })

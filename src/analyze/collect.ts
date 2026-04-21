@@ -1,5 +1,17 @@
 import { runGit } from '../lib/git.ts'
-import type { ContributorRow, FirefightingRow, MonthlyCommitCount, RankedPath, SecurityFixRow } from './types.ts'
+import {
+  agentToolingContributorKeysInCommit,
+  classifyAiToolingCommit,
+  resolveAiToolingContributorKey,
+} from './aiToolingPatterns.ts'
+import type {
+  AiToolingHotspotMatch,
+  ContributorRow,
+  FirefightingRow,
+  MonthlyCommitCount,
+  RankedPath,
+  SecurityFixRow,
+} from './types.ts'
 
 const CHURN_WINDOW = '1 year ago'
 const FIRE_WINDOW = '1 year ago'
@@ -25,6 +37,10 @@ const SECURITY_TIER3_RE = /SSRF|XSS|CSRF|injection|traversal|prototype.pollution
 // "Merge commit from fork" is handled separately via a body-aware pass (Step 3)
 const SECURITY_COMBINED_GREP = [SECURITY_TIER1_GREP, ...SECURITY_TIER2_GREPS, SECURITY_TIER3_GREP]
 
+/** Delimits `git log` records in {@link collectAiToolingHotspots}; must not appear in commit metadata. */
+const AI_LOG_MARKER_COMMIT = 'REP_COMMIT_V1'
+const AI_LOG_MARKER_PATHS = 'REP_PATHS_V1'
+
 function countPathTouches (gitNameOnlyLog: string): RankedPath[] {
   const counts = new Map<string, number>()
   for (const line of gitNameOnlyLog.split('\n')) {
@@ -45,6 +61,92 @@ export async function collectChurn (cwd: string, verbose?: boolean): Promise<Ran
     { cwd, verbose }
   )
   return countPathTouches(raw)
+}
+
+export async function collectAiToolingHotspots (
+  cwd: string,
+  verbose?: boolean
+): Promise<{
+  topFiles: RankedPath[]
+  topAuthors: ContributorRow[]
+  trackedBotContributors: ContributorRow[]
+  matches: AiToolingHotspotMatch[]
+}> {
+  const fmt = `${AI_LOG_MARKER_COMMIT}%n%H%n%an%n%ae%n%s%n%b%n${AI_LOG_MARKER_PATHS}%n`
+  const raw = await runGit(
+    ['log', `--since=${CHURN_WINDOW}`, '--no-merges', `--format=${fmt}`, '--name-only'],
+    { cwd, verbose }
+  )
+
+  const pathCounts = new Map<string, number>()
+  const authorCounts = new Map<string, number>()
+  const trackedBotCounts = new Map<string, number>()
+  const matches: AiToolingHotspotMatch[] = []
+  const matchCap = 50
+
+  const parts = raw.split(`${AI_LOG_MARKER_COMMIT}\n`)
+  for (const part of parts) {
+    const block = part.replace(/\s+$/, '')
+    if (block.length === 0) continue
+
+    const pathsMarker = `\n${AI_LOG_MARKER_PATHS}\n`
+    const idx = block.indexOf(pathsMarker)
+    if (idx === -1) continue
+
+    const meta = block.slice(0, idx)
+    const pathsSection = block.slice(idx + pathsMarker.length)
+
+    const metaLines = meta.split('\n')
+    const hash = metaLines[0]?.trim() ?? ''
+    const authorName = metaLines[1]?.trim() ?? ''
+    const authorEmail = metaLines[2]?.trim() ?? ''
+    const subject = metaLines[3]?.trim() ?? ''
+    const body = metaLines.slice(4).join('\n')
+
+    if (!/^[0-9a-f]{7,40}$/i.test(hash)) continue
+
+    const via = classifyAiToolingCommit({ authorName, authorEmail, subject, body })
+    if (via === null) continue
+
+    if (matches.length < matchCap) {
+      matches.push({ hash: hash.slice(0, 7), matchedVia: via, subject })
+    }
+
+    const contributorKey = resolveAiToolingContributorKey({
+      matchedVia: via,
+      authorName,
+      authorEmail,
+      body,
+    })
+    authorCounts.set(contributorKey, (authorCounts.get(contributorKey) ?? 0) + 1)
+
+    for (const rowKey of agentToolingContributorKeysInCommit({ authorEmail, body })) {
+      trackedBotCounts.set(rowKey, (trackedBotCounts.get(rowKey) ?? 0) + 1)
+    }
+
+    for (const line of pathsSection.split('\n')) {
+      const p = line.trim()
+      if (p.length === 0) continue
+      pathCounts.set(p, (pathCounts.get(p) ?? 0) + 1)
+    }
+  }
+
+  const topFiles = [...pathCounts.entries()]
+    .map(([path, touches]) => ({ path, touches }))
+    .sort((a, b) => b.touches - a.touches)
+    .slice(0, 20)
+
+  const topAuthors = [...authorCounts.entries()]
+    .map(([name, commits]) => ({ name, commits }))
+    .sort((a, b) => b.commits - a.commits)
+    .slice(0, 12)
+
+  const trackedBotContributors = [...trackedBotCounts.entries()]
+    .filter(([, commits]) => commits > 0)
+    .map(([name, commits]) => ({ name, commits }))
+    .sort((a, b) => b.commits - a.commits)
+
+  return { topFiles, topAuthors, trackedBotContributors, matches }
 }
 
 export async function collectBugHotspots (cwd: string, verbose?: boolean): Promise<RankedPath[]> {

@@ -86,6 +86,18 @@ export function buildInsights (report: Omit<AnalysisReport, 'insights'>): Analys
   }
 
   const securityPaths = new Set(report.securityHotspots.topFiles.map(f => f.path))
+  const aiPaths = new Set(report.aiToolingHotspots.topFiles.map(f => f.path))
+  const secAiOverlap = report.securityHotspots.topFiles.filter(f => aiPaths.has(f.path))
+  if (secAiOverlap.length > 0) {
+    const paths = secAiOverlap.map(o => o.path).slice(0, 8).join(', ')
+    const extra = secAiOverlap.length > 8 ? ` (+${String(secAiOverlap.length - 8)} more)` : ''
+    insights.push({
+      id: 'security_ai_tooling_overlap',
+      level: 'warn',
+      message: `Files appear in both agent/automation-attributed activity (${report.aiToolingHotspots.window}) and security-fix hotspots: ${paths}${extra}.`,
+    })
+  }
+
   const secChurnOverlap = report.churn.topFiles.filter(f => securityPaths.has(f.path))
   if (secChurnOverlap.length > 0) {
     const paths = secChurnOverlap.map(o => o.path).slice(0, 8).join(', ')

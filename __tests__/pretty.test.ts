@@ -54,6 +54,17 @@ const basePrettyFixture = (): Omit<AnalysisReport, 'insights'> => ({
     topFiles: [{ path: 'src/app.ts', touches: 1 }],
     matches: [{ hash: 'def5678', subject: 'fix(security): CVE-2024-1234', tier: 1 }],
   },
+  aiToolingHotspots: {
+    window: '1 year ago',
+    patternSetVersion: 6,
+    topFiles: [{ path: 'src/agent.ts', touches: 2 }],
+    topAuthors: [{ name: 'copilot-swe-agent[bot]', commits: 2 }],
+    trackedBotContributors: [
+      { name: 'copilot-swe-agent[bot]', commits: 2 },
+      { name: 'Claude (Anthropic)', commits: 1 },
+    ],
+    matches: [],
+  },
 })
 
 describe('renderPrettyReport', () => {
@@ -72,6 +83,22 @@ describe('renderPrettyReport', () => {
     assert.ok(out.includes('Activity by month'))
   })
 
+  test('AI subsection uses commit-contributions headline without removed dim explainer', () => {
+    const report: AnalysisReport = {
+      ...basePrettyFixture(),
+      insights: [],
+    }
+    const plain = stripAnsi(renderPrettyReport(report))
+    assert.ok(plain.includes('Agent & bot identities · commit contributions'))
+    assert.strictEqual(plain.includes('Non-merge commits in this window'), false)
+    assert.strictEqual(plain.includes('curated signals'), false)
+    assert.strictEqual(
+      plain.includes('── Agent & bot identities'),
+      false,
+      'agent identities should stay under the AI section, not a second horizontal rule',
+    )
+  })
+
   test('main section titles appear in canonical order (with insights)', () => {
     const report: AnalysisReport = {
       ...basePrettyFixture(),
@@ -87,6 +114,7 @@ describe('renderPrettyReport', () => {
       'Churn · top paths · since',
       'Bug-keyword hotspots · grep',
       'Firefighting · oneline · since',
+      'AI / automation tooling · paths & agents · since',
       'Security-fix hotspots ·',
       '── Insights',
     ])
@@ -105,6 +133,7 @@ describe('renderPrettyReport', () => {
       'Churn · top paths · since',
       'Bug-keyword hotspots · grep',
       'Firefighting · oneline · since',
+      'AI / automation tooling · paths & agents · since',
       'Security-fix hotspots ·',
     ])
   })
