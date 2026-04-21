@@ -1,6 +1,8 @@
 import { isInsideGitWorkTree, NotAGitRepositoryError } from '../lib/git.ts'
+import { AI_TOOLING_PATTERN_SET_VERSION } from './aiToolingPatterns.ts'
 import {
   collectActivityByMonth,
+  collectAiToolingHotspots,
   collectBugHotspots,
   collectChurn,
   collectFirefighting,
@@ -61,6 +63,14 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
         topFiles: [],
         matches: [],
       },
+      aiToolingHotspots: {
+        window: windows.churn,
+        patternSetVersion: AI_TOOLING_PATTERN_SET_VERSION,
+        topFiles: [],
+        topAuthors: [],
+        trackedBotContributors: [],
+        matches: [],
+      },
     }
 
     return {
@@ -78,6 +88,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     contributorsLastYear,
     contributorsLastSixMonths,
     securityResult,
+    aiToolingResult,
   ] = await Promise.all([
     collectChurn(cwd, verbose),
     collectBugHotspots(cwd, verbose),
@@ -87,6 +98,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     collectShortlog(cwd, windows.shortlogYear, verbose),
     collectShortlog(cwd, windows.shortlogSixMonths, verbose),
     collectSecurityHotspots(cwd, verbose),
+    collectAiToolingHotspots(cwd, verbose),
   ])
 
   const base: Omit<AnalysisReport, 'insights'> = {
@@ -120,6 +132,14 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
       keywordPattern: patterns.security,
       topFiles: securityResult.topFiles,
       matches: securityResult.matches,
+    },
+    aiToolingHotspots: {
+      window: windows.churn,
+      patternSetVersion: AI_TOOLING_PATTERN_SET_VERSION,
+      topFiles: aiToolingResult.topFiles,
+      topAuthors: aiToolingResult.topAuthors,
+      trackedBotContributors: aiToolingResult.trackedBotContributors,
+      matches: aiToolingResult.matches,
     },
   }
 

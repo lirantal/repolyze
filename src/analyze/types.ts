@@ -1,4 +1,4 @@
-export const REPORT_SCHEMA_VERSION = 1 as const
+export const REPORT_SCHEMA_VERSION = 2 as const
 
 export interface RankedPath {
   path: string
@@ -32,6 +32,12 @@ export interface AnalysisInsight {
   message: string
 }
 
+export interface AiToolingHotspotMatch {
+  hash: string
+  matchedVia: string
+  subject: string
+}
+
 export interface AnalysisReport {
   schemaVersion: typeof REPORT_SCHEMA_VERSION
   generatedAt: string
@@ -63,6 +69,20 @@ export interface AnalysisReport {
     keywordPattern: string
     topFiles: RankedPath[]
     matches: SecurityFixRow[]
+  }
+  aiToolingHotspots: {
+    window: string
+    patternSetVersion: number
+    topFiles: RankedPath[]
+    /** One resolved primary identity per classified commit (for detail / tooling). */
+    topAuthors: ContributorRow[]
+    /**
+     * Counts per tracked agent identity (any GitHub App `+<slug>[bot]@users.noreply.github.com`,
+     * Anthropic, Windsurf/Codeium, Cursor): each classified commit increments every distinct
+     * identity on the author line or in any `Co-authored-by` trailer.
+     */
+    trackedBotContributors: ContributorRow[]
+    matches: AiToolingHotspotMatch[]
   }
   insights: AnalysisInsight[]
 }
