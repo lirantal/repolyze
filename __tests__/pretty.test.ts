@@ -137,4 +137,50 @@ describe('renderPrettyReport', () => {
       'Security-fix hotspots ·',
     ])
   })
+
+  test('contributor roster change is 0% when last year and last 6 months author sets match', () => {
+    const report: AnalysisReport = {
+      ...basePrettyFixture(),
+      insights: [],
+    }
+    const plain = stripAnsi(renderPrettyReport(report))
+    assert.ok(plain.includes('Roster change: 0%'))
+    assert.ok(plain.includes('the same distinct contributors appear on both lists above'))
+  })
+
+  test('contributor roster change reflects authors only in one window', () => {
+    const report: AnalysisReport = {
+      ...basePrettyFixture(),
+      contributors: {
+        allTime: [
+          { name: 'Ada', commits: 10 },
+          { name: 'Bob', commits: 5 },
+        ],
+        lastYear: [
+          { name: 'Ada', commits: 10 },
+          { name: 'Bob', commits: 5 },
+        ],
+        lastSixMonths: [{ name: 'Ada', commits: 4 }],
+      },
+      insights: [],
+    }
+    const plain = stripAnsi(renderPrettyReport(report))
+    assert.ok(plain.includes('Roster change: 50%'))
+    assert.ok(plain.includes('missing from the last-6-months list'))
+  })
+
+  test('contributor roster change when last 6 months is empty notes no counted authors', () => {
+    const report: AnalysisReport = {
+      ...basePrettyFixture(),
+      contributors: {
+        allTime: [{ name: 'Ada', commits: 10 }],
+        lastYear: [{ name: 'Ada', commits: 10 }],
+        lastSixMonths: [],
+      },
+      insights: [],
+    }
+    const plain = stripAnsi(renderPrettyReport(report))
+    assert.ok(plain.includes('Roster change: 100%'))
+    assert.ok(plain.includes('not meaningful turnover'))
+  })
 })
