@@ -2,7 +2,7 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert'
 import { renderPrettyReport } from '../src/render/pretty.ts'
 import type { AnalysisReport } from '../src/analyze/types.ts'
-import { REPORT_SCHEMA_VERSION } from '../src/analyze/types.ts'
+import { CHURN_DIRECTORY_DEPTH_MAX, REPORT_SCHEMA_VERSION } from '../src/analyze/types.ts'
 
 function stripAnsi (s: string): string {
   return s.replace(/\u001b\[[0-9;]*m/g, '')
@@ -32,7 +32,12 @@ const basePrettyFixture = (): Omit<AnalysisReport, 'insights'> => ({
     topLevel: '/tmp/repo',
     head: 'deadbeef',
   },
-  churn: { window: '1 year ago', topFiles: [{ path: 'src/app.ts', touches: 42 }] },
+  churn: {
+    window: '1 year ago',
+    topFiles: [{ path: 'src/app.ts', touches: 42 }],
+    topDirectories: [{ path: 'src', touches: 42 }],
+    directoryDepthMax: CHURN_DIRECTORY_DEPTH_MAX,
+  },
   contributors: {
     allTime: [{ name: 'Ada', commits: 10 }],
     lastYear: [{ name: 'Ada', commits: 10 }],
@@ -113,6 +118,7 @@ describe('renderPrettyReport', () => {
       'Activity by month ·',
       'Contributors · non-merge commits',
       'Churn · top paths · since',
+      'Churn · top directories (max depth',
       'Bug-keyword hotspots · grep',
       'Firefighting · top paths · since',
       'AI / automation tooling · paths & agents · since',
@@ -132,6 +138,7 @@ describe('renderPrettyReport', () => {
       'Activity by month ·',
       'Contributors · non-merge commits',
       'Churn · top paths · since',
+      'Churn · top directories (max depth',
       'Bug-keyword hotspots · grep',
       'Firefighting · top paths · since',
       'AI / automation tooling · paths & agents · since',

@@ -26,8 +26,13 @@ git log --format=format: --name-only --since="1 year ago" \
 ### Insights we gather
 
 - **Top changed paths** in the last year (frequency counts across commits).
+- **Top directories (depth-capped rollup)** from the same history: file-level counts are summed into directory keys using at most the **first three directory segments** (the filename is dropped; deeper paths roll up to that prefix). Root-only paths (for example `README.md`) bucket under **`.`**. Useful for **monorepos** and large trees where many files sit under a few busy prefixes. The human report shows this as **Churn · top directories (max depth 3)** immediately after **Churn · top paths**; JSON includes `churn.topDirectories`, `churn.directoryDepthMax`, and shares `churn.window` with file churn.
 - **Hotspot candidates** for cross-checking with bug-keyword history (see section 3).
 - Context from the article: churn-based signals have been studied as predictors of defects (the article references Microsoft Research work on relative code churn).
+
+### Top directories: how the bucket is chosen
+
+Given a path like `packages/api/src/handlers/foo.ts`, directory segments are `packages`, `api`, `src`, `handlers`, …; the rollup key keeps **up to three** of those in order, here **`packages/api/src`**. A shallower file such as `src/hot.ts` rolls up to **`src`**. Touch counts match file churn semantics (one increment per path line in the name-only log).
 
 ---
 
@@ -325,7 +330,7 @@ For **machine-readable** output, see `aiToolingHotspots` in the JSON report (`to
 ## How `repolyze` maps this document to output
 
 - **Human output**: a non-interactive, terminal-formatted report (styled for quick scanning).
-- **Machine output**: `repolyze --json` emits a structured report for tooling and AI agents (including **`aiToolingHotspots`** and a monotonic **`schemaVersion`**).
+- **Machine output**: `repolyze --json` emits a structured report for tooling and AI agents (including **`churn.topDirectories`** / **`churn.directoryDepthMax`**, **`aiToolingHotspots`**, and a monotonic **`schemaVersion`**).
 
 If you extend the tool, keep the article’s intent in mind: these signals narrow **where to read first** and **what organizational dynamics might be in play**, not a complete audit on their own.
 

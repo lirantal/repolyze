@@ -13,7 +13,7 @@ import {
   windows,
 } from './collect.ts'
 import { buildInsights } from './insights.ts'
-import { REPORT_SCHEMA_VERSION, type AnalysisReport } from './types.ts'
+import { CHURN_DIRECTORY_DEPTH_MAX, REPORT_SCHEMA_VERSION, type AnalysisReport } from './types.ts'
 
 export interface AnalyzeOptions {
   verbose?: boolean
@@ -42,6 +42,8 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
       churn: {
         window: windows.churn,
         topFiles: [],
+        topDirectories: [],
+        directoryDepthMax: CHURN_DIRECTORY_DEPTH_MAX,
       },
       contributors: {
         allTime: [],
@@ -81,7 +83,7 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
   }
 
   const [
-    churnTopFiles,
+    churnResult,
     bugHotspotsTopFiles,
     activityByMonth,
     firefightingResult,
@@ -112,7 +114,9 @@ export async function analyzeRepository (repositoryPath: string, opts?: AnalyzeO
     },
     churn: {
       window: windows.churn,
-      topFiles: churnTopFiles,
+      topFiles: churnResult.topFiles,
+      topDirectories: churnResult.topDirectories,
+      directoryDepthMax: CHURN_DIRECTORY_DEPTH_MAX,
     },
     contributors: {
       allTime: contributorsAllTime,

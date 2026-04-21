@@ -4,13 +4,14 @@ import {
   classifyAiToolingCommit,
   resolveAiToolingContributorKey,
 } from './aiToolingPatterns.ts'
-import type {
-  AiToolingHotspotMatch,
-  ContributorRow,
-  FirefightingRow,
-  MonthlyCommitCount,
-  RankedPath,
-  SecurityFixRow,
+import {
+  CHURN_DIRECTORY_DEPTH_MAX,
+  type AiToolingHotspotMatch,
+  type ContributorRow,
+  type FirefightingRow,
+  type MonthlyCommitCount,
+  type RankedPath,
+  type SecurityFixRow,
 } from './types.ts'
 
 const CHURN_WINDOW = '1 year ago'
@@ -40,26 +41,67 @@ const SECURITY_COMBINED_GREP = [SECURITY_TIER1_GREP, ...SECURITY_TIER2_GREPS, SE
 const AI_LOG_MARKER_COMMIT = 'REP_COMMIT_V1'
 const AI_LOG_MARKER_PATHS = 'REP_PATHS_V1'
 
-function countPathTouches (gitNameOnlyLog: string): RankedPath[] {
+const CHURN_TOP_LIMIT = 20
+
+/** Directory bucket for churn rollup: first `maxDirDepth` segments of the path (excluding filename). */
+function churnDirectoryKey (filePath: string, maxDirDepth: number): string {
+  const normalized = filePath.replace(/\\/g, '/')
+  const segments = normalized.split('/').filter(s => s.length > 0)
+  if (segments.length === 0) return '.'
+  const dirSegments = segments.slice(0, -1)
+  if (dirSegments.length === 0) return '.'
+  const take = Math.min(maxDirDepth, dirSegments.length)
+  return dirSegments.slice(0, take).join('/')
+}
+
+function fileTouchCountsFromLog (gitNameOnlyLog: string): Map<string, number> {
   const counts = new Map<string, number>()
   for (const line of gitNameOnlyLog.split('\n')) {
     const p = line.trim()
     if (p.length === 0) continue
     counts.set(p, (counts.get(p) ?? 0) + 1)
   }
+  return counts
+}
 
+function rankedTopFromCounts (counts: Map<string, number>, limit: number): RankedPath[] {
   return [...counts.entries()]
     .map(([path, touches]) => ({ path, touches }))
     .sort((a, b) => b.touches - a.touches)
-    .slice(0, 20)
+    .slice(0, limit)
 }
 
-export async function collectChurn (cwd: string, verbose?: boolean): Promise<RankedPath[]> {
+function topPathTouchesFromNameOnlyLog (gitNameOnlyLog: string, limit: number): RankedPath[] {
+  return rankedTopFromCounts(fileTouchCountsFromLog(gitNameOnlyLog), limit)
+}
+
+function topDirectoriesFromFileCounts (
+  fileCounts: Map<string, number>,
+  maxDirDepth: number,
+  limit: number
+): RankedPath[] {
+  const dirCounts = new Map<string, number>()
+  for (const [path, touches] of fileCounts) {
+    const key = churnDirectoryKey(path, maxDirDepth)
+    dirCounts.set(key, (dirCounts.get(key) ?? 0) + touches)
+  }
+  return rankedTopFromCounts(dirCounts, limit)
+}
+
+export async function collectChurn (
+  cwd: string,
+  verbose?: boolean,
+  maxDirectoryDepth: number = CHURN_DIRECTORY_DEPTH_MAX
+): Promise<{ topFiles: RankedPath[]; topDirectories: RankedPath[] }> {
   const raw = await runGit(
     ['log', '--format=format:', '--name-only', `--since=${CHURN_WINDOW}`],
     { cwd, verbose }
   )
-  return countPathTouches(raw)
+  const fileCounts = fileTouchCountsFromLog(raw)
+  return {
+    topFiles: rankedTopFromCounts(fileCounts, CHURN_TOP_LIMIT),
+    topDirectories: topDirectoriesFromFileCounts(fileCounts, maxDirectoryDepth, CHURN_TOP_LIMIT),
+  }
 }
 
 export async function collectAiToolingHotspots (
@@ -153,7 +195,7 @@ export async function collectBugHotspots (cwd: string, verbose?: boolean): Promi
     ['log', '-i', '-E', `--grep=${BUG_GREP}`, '--name-only', '--format='],
     { cwd, verbose }
   )
-  return countPathTouches(raw)
+  return topPathTouchesFromNameOnlyLog(raw, CHURN_TOP_LIMIT)
 }
 
 export async function collectActivityByMonth (cwd: string, verbose?: boolean): Promise<MonthlyCommitCount[]> {
@@ -202,7 +244,7 @@ export async function collectFirefighting (
 
   return {
     matches: parseFirefightingOnelineLog(onelineRaw),
-    topFiles: countPathTouches(pathsRaw),
+    topFiles: topPathTouchesFromNameOnlyLog(pathsRaw, CHURN_TOP_LIMIT),
   }
 }
 
@@ -287,7 +329,7 @@ export async function collectSecurityHotspots (
       ['show', '--format=format:', '--name-only', ...hashArgs],
       { cwd, verbose }
     )
-    topFiles = countPathTouches(rawFiles)
+    topFiles = topPathTouchesFromNameOnlyLog(rawFiles, CHURN_TOP_LIMIT)
   }
 
   return { topFiles, matches }
