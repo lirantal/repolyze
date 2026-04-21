@@ -61,6 +61,15 @@ git shortlog -sn --no-merges --since="6 months ago"
 - **Concentration** of commits among top authors (useful for bus-factor style interpretation).
 - **Activity shift** signals by comparing all-time versus recent windows.
 
+### Pretty output: likely automation in the contributor list
+
+`git shortlog` only provides **display names**, not email addresses. In the terminal report’s **Contributors** section, `repolyze` highlights rows that look like **GitHub automation accounts** so they read distinctly from people:
+
+- Any name ending in **`[bot]`** (GitHub’s usual App account form in shortlog, for example `renovate[bot]` or `github-actions[bot]`).
+- The humanized label **`GitHub Actions`**, which matches the common shortlog name for commits authored as `GitHub Actions <actions@github.com>` (the address itself is not visible in `shortlog`).
+
+This is **name-based heuristics only**: a human named like a bot could be highlighted incorrectly, and the inverse can happen if a bot uses an unusual display name. Use the **AI / automation tooling** block in the report (which uses author email and trailers from `git log`) for stronger attribution of automation work.
+
 ---
 
 ## 3. Where bugs cluster (keyword-filtered file touches)
@@ -268,10 +277,46 @@ git log --all --grep="Merge commit from fork" --format="%H %s%n%b" \
 
 ---
 
+## 7. AI and automation tooling (paths + agent identities)
+
+### Purpose
+
+Complement ownership and churn (sections 1–2) with a **separate slice of history**: commits that are plausibly **agent- or automation-assisted**, then which **paths** they touch and which **identities** appear (including direct authors, not only `Co-authored-by` trailers).
+
+This is **heuristic metadata** from commit metadata (author email, message trailers), not proof of how lines were written.
+
+### Window and scope
+
+- Same **~1 year** window as churn, **non-merge** commits only (aligned with contributor `shortlog` semantics).
+- **Paths**: ranked by how often a path appears in the diff of a classified commit (same spirit as section 1, filtered to this subset).
+- **Overlap styling** (pretty output): paths that also appear in **security-fix hotspots** (section 6) can be emphasized as an intersection hint, not causality.
+
+### What counts as “agent / automation assisted”
+
+`repolyze` classifies a commit when **any** of the following holds (author line or any `Co-authored-by` trailer, case-insensitive trailer prefix):
+
+1. **GitHub App noreply** addresses: `123+slug[bot]@users.noreply.github.com` or `slug[bot]@users.noreply.github.com` (any slug GitHub uses for that app).
+2. **Built-in GitHub Actions** commits: author **`GitHub Actions <actions@github.com>`** (common for workflow-generated commits such as changelog bumps).
+3. **Anthropic**: `noreply@anthropic.com` with a matching `Claude` display name rule set (strict enough to avoid arbitrary emails).
+4. **Windsurf / Codeium**: trailer emails under `@codeium.com` or `@windsurf.com`.
+5. **Cursor agent**: trailer email **`cursoragent@cursor.com`**.
+
+### Agent & bot identities · commit contributions
+
+Under the same **AI / automation tooling** section, a second table lists **commit counts per stable identity** for the window:
+
+- GitHub automation rows use the **`slug[bot]`** form derived from noreply email when available, or the label **`GitHub Actions`** for `actions@github.com`.
+- Anthropic trailers roll up to **`Claude (Anthropic)`**; Windsurf and Cursor use fixed row labels **`Windsurf`** and **`Cursor`**.
+- A single commit can credit **multiple** identities (for example several `Co-authored-by` bots).
+
+For **machine-readable** output, see `aiToolingHotspots` in the JSON report (`topFiles`, `trackedBotContributors`, `patternSetVersion`, etc.). The human report uses a dedicated **purple** palette for this block so it is visually distinct from churn, bugs, security, and the green contributor bars in section 2.
+
+---
+
 ## How `repolyze` maps this document to output
 
 - **Human output**: a non-interactive, terminal-formatted report (styled for quick scanning).
-- **Machine output**: `repolyze --json` emits a structured report for tooling and AI agents.
+- **Machine output**: `repolyze --json` emits a structured report for tooling and AI agents (including **`aiToolingHotspots`** and a monotonic **`schemaVersion`**).
 
 If you extend the tool, keep the article’s intent in mind: these signals narrow **where to read first** and **what organizational dynamics might be in play**, not a complete audit on their own.
 
