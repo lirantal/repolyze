@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.3.0
+
+### Minor Changes
+
+- [`f457491`](https://github.com/lirantal/repolyze/commit/f457491536a88bacd25817b34e29270e768092fe) Thanks [@lirantal](https://github.com/lirantal)! - feat: firefighting section improved
+
 ## 1.2.1
 
 ### Patch Changes
