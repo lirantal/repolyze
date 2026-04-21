@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.4.0
+
+### Minor Changes
+
+- [`cfdcb70`](https://github.com/lirantal/repolyze/commit/cfdcb70d88f004b05c80960fc7e884139e18f696) Thanks [@lirantal](https://github.com/lirantal)! - feat: add directory churn insights
+
 ## 1.3.0
 
 ### Minor Changes
