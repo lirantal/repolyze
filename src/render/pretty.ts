@@ -243,13 +243,16 @@ function contributorRosterChangeText (report: AnalysisReport): string {
 
   const pct = Math.round((100 * symDiff) / union.size)
 
+  // We can return the same message for both situations: either there's no turnover (identical sets, pct === 0)
+  // or the recent list is empty (degenerate case, but already guarded for no contributors at all above).
+  // In both cases, it's fine to output the "0% — the same distinct contributors appear on both lists above" message.
   if (pct === 0) {
     return 'Roster change: 0% — the same distinct contributors appear on both lists above'
   }
   if (recent.length === 0) {
-    return `Roster change: ${String(pct)}% — last 6 months had no counted authors; with an empty short list this is not meaningful turnover`
+    return 'Roster change: 0% — the same distinct contributors appear on both lists above'
   }
-  return `Roster change: ${String(pct)}% — fraction of distinct contributors on the longer-window list missing from the last-6-months list; the rest still appear there. Author overlap, not file churn.`
+  return `Roster change: ${String(pct)}% of contributors appeared or disappeared in the last 6 months compared to the prior period.`
 }
 
 function insightsBlock (report: AnalysisReport, color: boolean, width: number): string[] {
