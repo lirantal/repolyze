@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.2.1
+
+### Patch Changes
+
+- [`99db236`](https://github.com/lirantal/repolyze/commit/99db2363438870e41e888d05c0ef3b8193327461) Thanks [@lirantal](https://github.com/lirantal)! - feat: add a contributor insight about committer churn
+
 ## 1.2.0
 
 ### Minor Changes
