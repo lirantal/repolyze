@@ -22,7 +22,7 @@ export const CODING_AGENT_BOT_SLUGS: readonly string[] = [
   'zed-industries-assistant',
 ] as const
 
-export const AI_TOOLING_PATTERN_SET_VERSION = 6 as const
+export const AI_TOOLING_PATTERN_SET_VERSION = 7 as const
 
 const ANTHROPIC_NOREPLY = 'noreply@anthropic.com'
 
@@ -35,6 +35,19 @@ export function windsurfAgentEmailMatch (email: string): boolean {
 /** Cursor CLI / agent co-author email seen in practice. */
 export function cursorAgentEmailMatch (email: string): boolean {
   return email.trim().toLowerCase() === 'cursoragent@cursor.com'
+}
+
+/** Cursor IDE appends this as the final non-blank line of the commit body when committing from the product. */
+const MADE_WITH_CURSOR_LINE = /^Made-with:\s*Cursor\s*$/i
+
+function bodyEndsWithMadeWithCursor (body: string): boolean {
+  const lines = body.split('\n')
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const t = lines[i]?.trim() ?? ''
+    if (t.length === 0) continue
+    return MADE_WITH_CURSOR_LINE.test(t)
+  }
+  return false
 }
 
 const coAuthoredByRe = /^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/gim
@@ -138,6 +151,8 @@ export function resolveAiToolingContributorKey (opts: {
     return opts.authorName.trim().length > 0 ? opts.authorName : 'unknown'
   }
 
+  if (opts.matchedVia === 'body:made-with-cursor') return 'Cursor'
+
   coAuthoredByRe.lastIndex = 0
   for (const m of opts.body.matchAll(coAuthoredByRe)) {
     const name = (m[1] ?? '').trim()
@@ -173,6 +188,8 @@ export function classifyAiToolingCommit (opts: {
   const trailerHit = scanCoAuthoredBy(body)
   if (trailerHit !== null) return trailerHit
 
+  if (bodyEndsWithMadeWithCursor(body)) return 'body:made-with-cursor'
+
   if (isGithubAutomationActorEmail(opts.authorEmail)) return 'author:github-bot-email'
 
   return null
@@ -205,6 +222,7 @@ export function agentToolingContributorKeysInCommit (opts: { authorEmail: string
       keys.add('Cursor')
     }
   }
+  if (bodyEndsWithMadeWithCursor(opts.body)) keys.add('Cursor')
   return [...keys]
 }
 

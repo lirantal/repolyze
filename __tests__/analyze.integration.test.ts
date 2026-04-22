@@ -500,4 +500,34 @@ describe('analyzeRepository (integration)', () => {
       1,
     )
   })
+
+  test('tracks Cursor from Made-with body footer (no co-author trailer)', async () => {
+    const { dir, cleanup } = await createEmptyTempRepo()
+    after(async () => {
+      await cleanup()
+    })
+
+    await writeAndCommit(dir, {
+      file: 'a.ts',
+      content: '1\n',
+      message: 'init',
+      date: isoDaysAgo(30),
+    })
+
+    await writeAndCommit(dir, {
+      file: 'a.ts',
+      content: '2\n',
+      message: 'feat: from ide\n\nDescribe change.\n\nMade-with: Cursor',
+      date: isoDaysAgo(5),
+    })
+
+    const report = await analyzeRepository(dir)
+    assert.strictEqual(
+      report.aiToolingHotspots.trackedBotContributors.find(r => r.name === 'Cursor')?.commits,
+      1,
+    )
+    assert.ok(
+      report.aiToolingHotspots.matches.some(m => m.matchedVia === 'body:made-with-cursor'),
+    )
+  })
 })
