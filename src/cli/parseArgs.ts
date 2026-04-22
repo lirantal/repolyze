@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { parseArgs } from 'node:util'
 
 export interface ParsedCli {
   help: boolean
@@ -44,46 +45,34 @@ export function dropIfEntryScriptPath (argv: string[], entryFilePath: string): s
 }
 
 export function parseCliArgv (argv: string[]): ParsedCli {
-  const positionals: string[] = []
-  let help = false
-  let verbose = false
-  let json = false
-
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if (a === undefined) continue
-
-    if (a === '--') {
-      for (const p of argv.slice(i + 1)) positionals.push(p)
-      break
-    }
-
-    if (a === '--help' || a === '-h') {
-      help = true
-      continue
-    }
-    if (a === '--verbose' || a === '-v') {
-      verbose = true
-      continue
-    }
-    if (a === '--json') {
-      json = true
-      continue
-    }
-
-    if (a.startsWith('-')) {
-      throw new CliParseError(`Unknown option: ${a}`)
-    }
-
-    positionals.push(a)
+  let parsed
+  try {
+    parsed = parseArgs({
+      args: argv,
+      strict: true,
+      allowPositionals: true,
+      options: {
+        help: { type: 'boolean', short: 'h' },
+        verbose: { type: 'boolean', short: 'v' },
+        json: { type: 'boolean' },
+      },
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new CliParseError(msg)
   }
 
-  const repositoryPath = positionals[0] ?? '.'
+  const { values, positionals } = parsed
   if (positionals.length > 1) {
     throw new CliParseError('Too many positional arguments (expected 0 or 1 repository paths).')
   }
 
-  return { help, verbose, json, repositoryPath }
+  return {
+    help: values.help === true,
+    verbose: values.verbose === true,
+    json: values.json === true,
+    repositoryPath: positionals[0] ?? '.',
+  }
 }
 
 export const HELP_TEXT = `repolyze — scan a repository’s git history for maintainership and risk signals.

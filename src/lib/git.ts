@@ -1,4 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
+import process from 'node:process'
 import { promisify } from 'node:util'
 
 const execFile = promisify(execFileCallback)
