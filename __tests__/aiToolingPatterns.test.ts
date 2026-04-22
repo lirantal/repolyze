@@ -83,6 +83,36 @@ describe('classifyAiToolingCommit', () => {
     assert.strictEqual(via, 'co-authored-by:cursor')
   })
 
+  test('matches Cursor Made-with body footer on last non-blank line', () => {
+    const via = classifyAiToolingCommit({
+      authorName: 'Human',
+      authorEmail: 'human@example.com',
+      subject: 'feat: x',
+      body: 'Describe the change.\n\nMade-with: Cursor\n',
+    })
+    assert.strictEqual(via, 'body:made-with-cursor')
+  })
+
+  test('Made-with footer is case-insensitive', () => {
+    const via = classifyAiToolingCommit({
+      authorName: 'Human',
+      authorEmail: 'human@example.com',
+      subject: 'feat: x',
+      body: 'x\n\nMADE-WITH: cursor',
+    })
+    assert.strictEqual(via, 'body:made-with-cursor')
+  })
+
+  test('does not treat Made-with: Cursor as a match when it is not the last non-blank line', () => {
+    const via = classifyAiToolingCommit({
+      authorName: 'Human',
+      authorEmail: 'human@example.com',
+      subject: 'feat: x',
+      body: 'Made-with: Cursor\n\nMore release notes after.',
+    })
+    assert.strictEqual(via, null)
+  })
+
   test('does not match Claude Opus with a non-Anthropic email', () => {
     const via = classifyAiToolingCommit({
       authorName: 'Dev',
@@ -217,6 +247,14 @@ describe('agentToolingContributorKeysInCommit', () => {
       'Cursor',
     ]))
   })
+
+  test('collects Cursor from Made-with body footer without co-author trailer', () => {
+    const keys = agentToolingContributorKeysInCommit({
+      authorEmail: 'dev@example.com',
+      body: 'Refactor widgets.\n\nMade-with: Cursor\n',
+    })
+    assert.deepStrictEqual(keys, ['Cursor'])
+  })
 })
 
 describe('resolveAiToolingContributorKey', () => {
@@ -258,6 +296,16 @@ describe('resolveAiToolingContributorKey', () => {
       body: '\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\n',
     })
     assert.strictEqual(key, 'Claude (Anthropic)')
+  })
+
+  test('uses Cursor for Made-with body footer classification', () => {
+    const key = resolveAiToolingContributorKey({
+      matchedVia: 'body:made-with-cursor',
+      authorName: 'Dev',
+      authorEmail: 'dev@example.com',
+      body: 'notes\n\nMade-with: Cursor\n',
+    })
+    assert.strictEqual(key, 'Cursor')
   })
 })
 

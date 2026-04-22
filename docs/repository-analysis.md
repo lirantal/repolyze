@@ -307,20 +307,20 @@ This is **heuristic metadata** from commit metadata (author email, message trail
 
 ### What counts as “agent / automation assisted”
 
-`repolyze` classifies a commit when **any** of the following holds (author line or any `Co-authored-by` trailer, case-insensitive trailer prefix):
+`repolyze` classifies a commit when **any** of the following holds (author line, commit body footer, or any `Co-authored-by` trailer; case-insensitive `Co-authored-by:` prefix):
 
 1. **GitHub App noreply** addresses: `123+slug[bot]@users.noreply.github.com` or `slug[bot]@users.noreply.github.com` (any slug GitHub uses for that app).
 2. **Built-in GitHub Actions** commits: author **`GitHub Actions <actions@github.com>`** (common for workflow-generated commits such as changelog bumps).
 3. **Anthropic**: `noreply@anthropic.com` with a matching `Claude` display name rule set (strict enough to avoid arbitrary emails).
 4. **Windsurf / Codeium**: trailer emails under `@codeium.com` or `@windsurf.com`.
-5. **Cursor agent**: trailer email **`cursoragent@cursor.com`**.
+5. **Cursor**: trailer email **`cursoragent@cursor.com`**, or a commit body whose **last non-blank line** is **`Made-with: Cursor`** (footer the Cursor IDE adds when creating a commit from the product).
 
 ### Agent & bot identities · commit contributions
 
 Under the same **AI / automation tooling** section, a second table lists **commit counts per stable identity** for the window:
 
 - GitHub automation rows use the **`slug[bot]`** form derived from noreply email when available, or the label **`GitHub Actions`** for `actions@github.com`.
-- Anthropic trailers roll up to **`Claude (Anthropic)`**; Windsurf and Cursor use fixed row labels **`Windsurf`** and **`Cursor`**.
+- Anthropic trailers roll up to **`Claude (Anthropic)`**; Windsurf and Cursor use fixed row labels **`Windsurf`** and **`Cursor`** (including the **`Made-with: Cursor`** body footer when present).
 - A single commit can credit **multiple** identities (for example several `Co-authored-by` bots).
 
 For **machine-readable** output, see `aiToolingHotspots` in the JSON report (`topFiles`, `trackedBotContributors`, `patternSetVersion`, etc.). The human report uses a dedicated **purple** palette for this block so it is visually distinct from churn, bugs, security, and the green contributor bars in section 2.

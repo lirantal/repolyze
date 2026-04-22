@@ -62,7 +62,7 @@ const basePrettyFixture = (): Omit<AnalysisReport, 'insights'> => ({
   },
   aiToolingHotspots: {
     window: '1 year ago',
-    patternSetVersion: 6,
+    patternSetVersion: 7,
     topFiles: [{ path: 'src/agent.ts', touches: 2 }],
     topAuthors: [{ name: 'copilot-swe-agent[bot]', commits: 2 }],
     trackedBotContributors: [
