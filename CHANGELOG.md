@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.5.0
+
+### Minor Changes
+
+- [`97dea74`](https://github.com/lirantal/repolyze/commit/97dea741c261e451053cabe443e56f7fc34a03aa) Thanks [@lirantal](https://github.com/lirantal)! - feat: find the Made-with Cursor commits and refactor CLI parser
+
 ## 1.4.0
 
 ### Minor Changes
