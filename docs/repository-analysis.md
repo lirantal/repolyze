@@ -330,6 +330,7 @@ For **machine-readable** output, see `aiToolingHotspots` in the JSON report (`to
 ## How `repolyze` maps this document to output
 
 - **Human output**: a non-interactive, terminal-formatted report (styled for quick scanning).
+- **LLM output**: `repolyze --markdown` emits a Markdown report optimized for piping into an LLM prompt.
 - **Machine output**: `repolyze --json` emits a structured report for tooling and AI agents (including **`churn.topDirectories`** / **`churn.directoryDepthMax`**, **`aiToolingHotspots`**, and a monotonic **`schemaVersion`**).
 
 If you extend the tool, keep the article’s intent in mind: these signals narrow **where to read first** and **what organizational dynamics might be in play**, not a complete audit on their own.

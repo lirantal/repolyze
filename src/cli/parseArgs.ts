@@ -87,7 +87,7 @@ Options:
   -h, --help      Show help
   -v, --verbose   Print git commands to stderr
   --json          Emit JSON (schemaVersion: 3) on stdout
-  --markdown      Emit CommonMark Markdown on stdout
+  --markdown      Emit Markdown report optimized for LLM consumption on stdout
 
 Arguments:
   repository      Path to analyze (defaults to the current working directory)
