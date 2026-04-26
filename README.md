@@ -86,7 +86,7 @@ npx repolyze --help
 
 ## Credits & References
 
-The default signals this tool collects mirror the git workflow described by **Maciej Piechowski** in *[The Git Commands I Run Before Reading Any Code](https://piechowski.io/post/git-commands-before-reading-code/)*. See [docs/repository-analysis.md](./docs/repository-analysis.md) for command-by-command notes, caveats, and the same attribution in context.
+The default signals this tool collects mirror the git workflow described by **[Ally Piechowski](http://github.com/grepsedawk)** in *[The Git Commands I Run Before Reading Any Code](https://piechowski.io/post/git-commands-before-reading-code/)*. See [docs/repository-analysis.md](./docs/repository-analysis.md) for command-by-command notes, caveats, and the same attribution in context.
 
 References:
 
