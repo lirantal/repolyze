@@ -1,5 +1,11 @@
 # repolyze
 
+## 1.6.0
+
+### Minor Changes
+
+- [`343441f`](https://github.com/lirantal/repolyze/commit/343441f936f41cc94a59a79737ffb261e4e21476) Thanks [@lirantal](https://github.com/lirantal)! - feat: markdown support
+
 ## 1.5.0
 
 ### Minor Changes
