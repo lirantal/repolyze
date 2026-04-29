@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { analyzeRepository } from '../analyze/index.ts'
 import { dropIfEntryScriptPath, HELP_TEXT, parseCliArgv, stripForwardedArgvSeparator } from '../cli/parseArgs.ts'
 import { GitCommandError, NotAGitRepositoryError } from '../lib/git.ts'
+import { renderMarkdownReport } from '../render/markdown.ts'
 import { renderPrettyReport } from '../render/pretty.ts'
 
 async function main (): Promise<void> {
@@ -32,6 +33,8 @@ async function main (): Promise<void> {
     const report = await analyzeRepository(cwd, { verbose: parsed.verbose })
     if (parsed.json) {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    } else if (parsed.markdown) {
+      process.stdout.write(`${renderMarkdownReport(report)}\n`)
     } else {
       process.stdout.write(`${renderPrettyReport(report)}\n`)
     }

@@ -5,6 +5,7 @@ export interface ParsedCli {
   help: boolean
   verbose: boolean
   json: boolean
+  markdown: boolean
   repositoryPath: string
 }
 
@@ -55,6 +56,7 @@ export function parseCliArgv (argv: string[]): ParsedCli {
         help: { type: 'boolean', short: 'h' },
         verbose: { type: 'boolean', short: 'v' },
         json: { type: 'boolean' },
+        markdown: { type: 'boolean' },
       },
     })
   } catch (err) {
@@ -71,6 +73,7 @@ export function parseCliArgv (argv: string[]): ParsedCli {
     help: values.help === true,
     verbose: values.verbose === true,
     json: values.json === true,
+    markdown: values.markdown === true,
     repositoryPath: positionals[0] ?? '.',
   }
 }
@@ -84,6 +87,7 @@ Options:
   -h, --help      Show help
   -v, --verbose   Print git commands to stderr
   --json          Emit JSON (schemaVersion: 3) on stdout
+  --markdown      Emit Markdown report optimized for LLM consumption on stdout
 
 Arguments:
   repository      Path to analyze (defaults to the current working directory)

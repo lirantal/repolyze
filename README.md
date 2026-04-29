@@ -37,6 +37,12 @@ Analyze another path:
 npx repolyze --json /path/to/repo
 ```
 
+Emit a Markdown report optimized for LLM consumption:
+
+```bash
+npx repolyze --markdown .
+```
+
 Verbose mode (prints `git` invocations to stderr):
 
 ```bash
