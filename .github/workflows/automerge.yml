@@ -38,4 +38,5 @@ jobs:
           MERGE_COMMIT_MESSAGE: "automatic"
           MERGE_FORKS: "false"
           MERGE_REQUIRED_APPROVALS: "0"
+          MERGE_READY_STATE: "clean,has_hooks,unknown"
           UPDATE_METHOD: "rebase"
