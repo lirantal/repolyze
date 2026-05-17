@@ -59,7 +59,7 @@ Browse [docs/](./docs/) for any additional files added over time.
 ## Other project docs
 
 - [DEVELOPMENT.md](./DEVELOPMENT.md) — local setup, running from source, tests, lint, build.
-- [.github/CONTRIBUTING.md](./.github/CONTRIBUTING.md) — contribution guidelines and commit expectations.
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution guidelines and commit expectations.
 
 ## Filename note
 
