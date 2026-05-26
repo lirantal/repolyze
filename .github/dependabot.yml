@@ -9,7 +9,7 @@ updates:
       prefix: "chore"
     open-pull-requests-limit: 10
     cooldown:
-      default-days: 7
+      default-days: 30
     labels:
       - "dependencies"
       - "automerge"
