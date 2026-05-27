@@ -2,8 +2,12 @@ name: CI
 
 on: [push, pull_request]
 
+permissions: {}
+
 jobs:
   test:
+    permissions:
+      contents: read
     strategy:
       matrix:
         node: ["22.x", "24.x"]
@@ -34,22 +38,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
         env:
           CI: true
-
-  ## OPTIONAL: enable package release preview using pkg-pr-new
-  # release-preview:
-  #   runs-on: ubuntu-latest
-  #   needs: test
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - uses: pnpm/action-setup@v6.0.3
-  #     - uses: actions/setup-node@v6
-  #       with:
-  #         node-version: "22.x"
-  #         cache: 'pnpm'
-  #     - name: install dependencies
-  #       run: pnpm install --frozen-lockfile
-  #     - name: build project
-  #       run: pnpm run build
-  #     - name: release preview with pkr-pr-new
-  #       run: pnpx pkg-pr-new publish
 
