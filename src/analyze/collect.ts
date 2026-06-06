@@ -376,14 +376,14 @@ export async function collectRepositoryMeta (
   try {
     topLevel = (await runGit(['rev-parse', '--show-toplevel'], { cwd, verbose })).trim() || null
   } catch {
-    topLevel = null
+    // topLevel remains null
   }
 
   let head: string | null = null
   try {
     head = (await runGit(['rev-parse', 'HEAD'], { cwd, verbose })).trim() || null
   } catch {
-    head = null
+    // head remains null
   }
 
   return { topLevel, head }
