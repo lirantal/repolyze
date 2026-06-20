@@ -1,66 +1,35 @@
-# Agents guide for repolyze
+# AGENTS.md
 
-Short orientation for humans and coding agents working in this repository. For day-to-day commands and paths, prefer [DEVELOPMENT.md](./DEVELOPMENT.md).
+Guidance for AI coding agents working in this repository.
 
-## Purpose
+## Start Here
 
-**repolyze** is a published CLI and library that inspects a **git** repository and reports health-style signals derived from history (churn, contributors, bug- and security-keyword hotspots, activity over time, and related metrics). It prints either human-readable terminal output or **JSON** (`--json`) for tools and agents. It is **not** a general-purpose static analyzer; it shells out to the `git` binary and interprets its output.
+Before making changes, read:
 
-## Quick commands
+- `CONTRIBUTING.md` for contribution, PR, testing, commit, and agent-specific expectations.
+- `RELEASE.md` for release workflow details.
+- `README.md` for user-facing behavior, install/use examples, and package or app overview.
+- `docs/README.md` for the project documentation index.
+- `docs/development.md` for local setup and development workflows.
+- `docs/testing.md` for test strategy, commands, and verification expectations.
+- `docs/architecture.md` for project structure, boundaries, and important invariants.
+- `docs/conventions.md` for project-specific coding, documentation, and maintenance conventions.
 
-From the repo root (Node.js v24+, pnpm, git on `PATH`):
+Treat those files as the source of truth. Do not duplicate or reinterpret their rules here.
 
-```bash
-pnpm install
-pnpm start -- --help
-pnpm test
-pnpm lint
-pnpm build
-```
+## Documentation
 
-Run the CLI against a path from source:
+- Keep documentation in sync when changing behavior, public interfaces, workflows, architecture, configuration, or operational assumptions.
+- Put project-specific development details in `docs/`; keep root files focused on their standard audiences.
+- Prefer linking to the source of truth over duplicating long instructions across files.
+- When adding new docs, link them from `docs/README.md` and update this file only when they become important entry points for future agents.
 
-```bash
-pnpm start -- --json .
-```
+## PRs and Issues
 
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for `tsx`/`node` invocation details and build output under `dist/`.
+- Follow PR, issue, and agent-labeling rules in `CONTRIBUTING.md`.
+- Use the issue-linking format specified in `CONTRIBUTING.md`.
 
-## Where to change what
+## Releases
 
-| Area | Location |
-| --- | --- |
-| CLI flags and argv handling | [src/cli/parseArgs.ts](./src/cli/parseArgs.ts) |
-| CLI entry | [src/bin/cli.ts](./src/bin/cli.ts) |
-| Orchestration and report shape | [src/analyze/index.ts](./src/analyze/index.ts), [src/analyze/types.ts](./src/analyze/types.ts) |
-| Git collectors | [src/analyze/collect.ts](./src/analyze/collect.ts) |
-| Derived insights | [src/analyze/insights.ts](./src/analyze/insights.ts) |
-| Git subprocess helpers | [src/lib/git.ts](./src/lib/git.ts) |
-| Terminal rendering | [src/render/pretty.ts](./src/render/pretty.ts) |
-| Public API surface | [src/main.ts](./src/main.ts) |
-| Tests and git fixtures | [`__tests__/`](./__tests__/), [`gitFixture.ts`](./__tests__/helpers/gitFixture.ts) |
-
-## Constraints for agents
-
-- Match **Node 24+** and **ESM**; follow existing import style (including `.ts` extensions in source as used elsewhere in this repo).
-- **Do not** hand-edit `dist/` — it is produced by `pnpm build`.
-- Tests use **real git** in temporary directories; see [DEVELOPMENT.md](./DEVELOPMENT.md).
-- Follow the project’s **ESLint** / **neostandard** setup when changing code.
-
-## Documentation (`docs/`)
-
-The [docs/](./docs/) directory holds longer-form reference material. Start there when you need definitions, methodology, or caveats beyond the code.
-
-- [docs/repository-analysis.md](./docs/repository-analysis.md) — what each signal means, article-based methodology, and how to interpret git-derived metrics.
-- [docs/research/security-analysis.md](./docs/research/security-analysis.md) — supplementary security-oriented research notes.
-
-Browse [docs/](./docs/) for any additional files added over time.
-
-## Other project docs
-
-- [DEVELOPMENT.md](./DEVELOPMENT.md) — local setup, running from source, tests, lint, build.
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution guidelines and commit expectations.
-
-## Filename note
-
-This file is **`AGENT.md`**. Some tooling expects **`AGENTS.md`** instead; you can rename or duplicate if your environment requires that name.
+- Follow `RELEASE.md` for release workflow and changeset creation steps.
+- If this project uses changesets, treat `RELEASE.md` and any changeset guidance in `CONTRIBUTING.md` as authoritative.
