@@ -107,7 +107,7 @@ References:
 
 Please consult [CONTRIBUTING](./CONTRIBUTING.md) for guidelines on contributing to this project.
 
-**Developing this repo locally** (running from source, tests, build): see [DEVELOPMENT.md](./DEVELOPMENT.md).
+**Developing this repo locally** (running from source, tests, build): see [docs/development.md](./docs/development.md).
 
 ## Author
 
