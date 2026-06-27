@@ -16,4 +16,4 @@ This directory contains project documentation for maintainers and coding agents.
 - [Project README](../README.md) - user-facing overview, installation, and usage.
 - [Contributing](../CONTRIBUTING.md) - issue, PR, commit, and agent expectations.
 - [Release](../RELEASE.md) - Changesets and release workflow.
-- [Development legacy guide](../DEVELOPMENT.md) - detailed local setup, source invocation, build output, and useful paths.
+- [Development guide](./development.md) - detailed local setup, source invocation, build output, and useful paths.
