@@ -4,6 +4,7 @@
       "ES2022"
     ],
     "strict": true,
+    "types": ["node"],
     "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
