@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js v24 or newer.
-- pnpm for dependency installation and scripts.
+- pnpm 12.15.0 for dependency installation and scripts (downloaded through `devEngines`).
 - git on `PATH`; repolyze shells out to the `git` binary during analysis and tests.
 
 ## Setup
