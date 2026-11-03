@@ -111,11 +111,5 @@
       "html"
     ]
   },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "12.15.0",
-      "onFail": "download"
-    }
-  }
+  "packageManager": "pnpm@12.9.0"
 }
